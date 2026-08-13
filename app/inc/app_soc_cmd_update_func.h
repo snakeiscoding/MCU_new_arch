@@ -20,7 +20,7 @@ typedef enum {
 void app_soc_cmd_update_parameter_func(void);
 void app_soc_cmd_update_erase_code_func(void);
 void app_soc_cmd_update_write_code_func(uint8_t *data, uint16_t len);
-void app_soc_cmd_update_start_update_func(void);
+void app_soc_cmd_update_start_update_func(uint8_t *data, uint16_t len);
 void app_soc_cmd_update_end_update_func(void);
 void app_soc_cmd_update_operation_mode_func(void);
 void app_soc_cmd_update_program_state_func(void);

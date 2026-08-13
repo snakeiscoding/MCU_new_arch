@@ -38,6 +38,7 @@ hal/chimera3/Firmware/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_tim_ex.c \
 hal/chimera3/Firmware/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_iwdg.c \
 hal/chimera3/src/hal_adc.c \
 hal/chimera3/src/hal_flash.c \
+hal/chimera3/src/hal_fw_update_cmd_interface.c \
 hal/chimera3/src/hal_gpio.c \
 hal/chimera3/src/hal_lcb_cmd_interface.c \
 hal/chimera3/src/hal_pwm.c \
