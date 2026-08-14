@@ -2,18 +2,25 @@
  * hal_fw_update_cmd_interface.c - chimera3 / STM32F407ZET6
  *
  * Overrides the weak hal_* hooks declared in app_soc_cmd_update_func.c and
- * drives hal_flash.c. See hal_flash_map.h for the flash partition map.
+ * drives hal_flash.c. See hal_flash_map.h for the flash partition map, and
+ * the hal_flash.c header for the legacy update sequence this has to
+ * interoperate with.
  *
- * chimera3 uses the legacy IAP model, so the addresses reported through
- * hal_get_fw_update_parameter() are the AP's *execution* addresses - the
- * bootloader programs that region in place. They match what the legacy
- * _MEMINF reported, so the host sees no change. (The GD32 boards report a
- * separate staging partition instead; that difference lives entirely here.)
+ * The addresses reported through hal_get_fw_update_parameter() are the AP's
+ * *execution* addresses. They match the legacy _MEMINF (chimera3io,
+ * CommonInternalDriver/Src/MemoryFlashWriteRead.c) field for field, except
+ * the NVRAM pair, which is deliberately left at 0 until the provisioning area
+ * is migrated - the legacy reported 0x0800A000 / 0x0800BFFF there. (The GD32
+ * boards report a separate staging partition instead; that difference lives
+ * entirely here.)
  *
  * !! The image format constants below (signature header, CRC16 parameters,
- * !! XOR keys) were carried over from the GD32 boards. Confirm with the SoC
- * !! side that the chimera3 image is produced with the same packer before
- * !! trusting hal_get_fw_update_program_state().
+ * !! XOR keys) were carried over from the GD32 boards and have NO counterpart
+ * !! on chimera3: the legacy IAP's Program State performs no verification at
+ * !! all and unconditionally reports "updated". Nothing has ever validated a
+ * !! chimera3 image this way, so confirm with the SoC side that the image is
+ * !! produced with the same packer as the GD32 boards before trusting
+ * !! hal_get_fw_update_program_state().
  */
 
 #include <string.h>
@@ -63,7 +70,10 @@ uint32_t total_write_fw_len = 0;
  * single shot on purpose: retrying an erase that reported an error does not
  * help, and the SoC gets a clean failure instead of a stalled command.
  * In the MODE=app build hal_flash_erase_fw_update_partition() always refuses,
- * because the AP partition is the running image. */
+ * because the AP partition is the running image.
+ * The legacy IAP does no flash work on this command at all - it only arms an
+ * internal flag - so a MODE=boot build is free to erase here instead, as long
+ * as End Update still backs the old image up before committing. */
 SOC_CMD_UPDATE_STATUS hal_erase_fw_update_partition(void)
 {
     if(!hal_flash_erase_fw_update_partition()) {
@@ -74,21 +84,40 @@ SOC_CMD_UPDATE_STATUS hal_erase_fw_update_partition(void)
     return UPDATE_SUCCESS;
 }
 
+/* The two bounds deliberately use different constants.
+ *
+ * The start address is held to HAL_AP_END_ADDRESS (0x0803FFFF, the last valid
+ * byte): a write that begins on the very last byte can only ever carry one
+ * byte and is meaningless for a page-based protocol, so it is refused outright.
+ * That costs nothing - the last byte is still reachable as the tail of a write
+ * that starts earlier, and the final 512-byte page starts at 0x0803FE00, well
+ * inside the bound.
+ *
+ * The length, however, has to be measured against HAL_AP_LIMIT (0x08040000,
+ * the exclusive end). Using HAL_AP_END_ADDRESS there loses a byte and rejects
+ * that final full page: 0x0803FFFF - 0x0803FE00 is 511, one short of the 512
+ * the page needs. This also keeps the length check in step with the one in
+ * hal_flash_write_fw_update_data(). */
 SOC_CMD_UPDATE_STATUS hal_fw_validate_start_addr(uint32_t start_addr, uint32_t len)
 {
     if(start_addr < HAL_AP_START_ADDRESS || start_addr >= HAL_AP_END_ADDRESS) {
         return UPDATE_FAIL;
     }
     /* expressed as a subtraction so a hostile len cannot overflow the sum */
-    if(len == 0 || len > (HAL_AP_END_ADDRESS - start_addr)) {
+    if(len == 0 || len > (HAL_AP_LIMIT - start_addr)) {
         return UPDATE_FAIL;
     }
     return UPDATE_SUCCESS;
 }
 
-/* Not retried either: a partial write leaves those cells programmed, so a
- * second pass over the same address would program non-erased flash and raise
- * PGSERR every time. Report the failure and let the SoC restart the update. */
+/* Programs the AP partition in place, which is NOT what the legacy IAP does -
+ * it stages each page into SRAM1 and only commits at End Update. Writing in
+ * place is simpler but gives up the legacy's implicit rollback, so a MODE=boot
+ * build using this path must back the old image up itself.
+ *
+ * Not retried: a partial write leaves those cells programmed, so a second pass
+ * over the same address would program non-erased flash and raise PGSERR every
+ * time. Report the failure and let the SoC restart the update. */
 SOC_CMD_UPDATE_STATUS hal_write_fw_update_data(uint32_t start_addr, uint8_t *data, uint32_t len)
 {
     if(hal_fw_validate_start_addr(start_addr, len) == UPDATE_FAIL) {
@@ -118,7 +147,10 @@ bool hal_verify_fw_update_password(uint8_t *data, uint16_t len)
 }
 /* Runs in the AP when the host opens a session: latch GoToMode so the next
  * reset lands in the IAP, which hosts the rest of the update. Mirrors the
- * legacy SocUart.c StartUpdate(). */
+ * legacy SocUart.c StartUpdate(), which latches the same byte in the same
+ * INFO block; the only difference is how it leaves the AP - the legacy did
+ * HAL_DeInit() + a direct MemoryFuncJump(JumpToIap), this resets instead and
+ * lets the IAP re-read GoToMode from its own reset path. */
 void hal_start_fw_update(void)
 {
     if(!hal_flash_set_goto_iap_mode(true)) {
@@ -129,7 +161,11 @@ void hal_start_fw_update(void)
     HAL_NVIC_SystemReset();
 }
 /* Runs in the IAP at the end of a session: drop the latch so the next reset
- * boots the freshly written AP instead of coming back into the bootloader. */
+ * boots the freshly written AP instead of coming back into the bootloader.
+ * Only the latch is handled here. The legacy IAP does considerably more at
+ * End Update - it backs the running AP up to APP_BACKUP_PARTITION and commits
+ * the staged SRAM1 image into APP_PARTITION before clearing GoToMode - so this
+ * is not yet a complete stand-in for it. */
 void hal_end_fw_update(void)
 {
     if(!hal_flash_set_goto_iap_mode(false)) {
@@ -315,9 +351,15 @@ SOC_CMD_UPDATE_STATUS hal_get_fw_update_program_state(void)
         mid_log_print(LOG_ERROR, "fw update verify crc32 checksum erro\r\n");
         return UPDATE_FAIL;
     }
-    /* No staging hand-off to record here: the image has already been programmed
-     * into the AP partition, so a pass simply tells the SoC it may end the
-     * session. A failure means the AP is now damaged and the host has to run
-     * the update again before resetting. */
+    /* No staging hand-off to record here: this path assumes the image is
+     * already in the AP partition, so a pass simply tells the SoC it may end
+     * the session, and a failure means the AP is now damaged and the host has
+     * to run the update again before resetting.
+     *
+     * That assumption only holds for an in-place writer. Under the legacy
+     * model the image is still sitting in SRAM1 at this point and the AP
+     * partition has not been touched yet, so these checks would be reading the
+     * *old* image. A MODE=boot build has to settle which of the two write
+     * models it uses before this function means anything. */
     return UPDATE_SUCCESS;
 }

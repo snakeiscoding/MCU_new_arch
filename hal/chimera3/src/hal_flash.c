@@ -1,19 +1,29 @@
 /*
  * hal_flash.c - chimera3 / STM32F407ZET6
  *
- * Follows the legacy chimera3 update model, which the existing IAP already
- * implements and which has been through validation:
+ * Has to interoperate with the legacy chimera3 update model, which the
+ * existing IAP already implements and which has been through validation.
+ * That model is (chimera3io, CommonInternalDriver/Src/SocUart.c - one file
+ * shared by both the legacy AP and the legacy IAP):
  *
- *   AP    Start Update  -> set GoToMode, reset
+ *   AP    Start Update  -> latch GoToMode in the INFO block, then leave the AP
  *   IAP   (on reset, GoToMode set) stays in the IAP and runs the SoC session
- *         Erase Code    -> erase the AP partition
- *         Write Code    -> program the AP partition in place
- *         Program State -> verify what was just written
- *         End Update    -> clear GoToMode, reset back into the AP
+ *         Erase Code    -> touches no flash; only arms an internal flag
+ *         Write Code    -> staged into SRAM1 (0x20000000), NOT into flash
+ *         Program State -> no verification; unconditionally reports "updated"
+ *         End Update    -> copies the running AP to APP_BACKUP_PARTITION,
+ *                          commits SRAM1 -> APP_PARTITION in one shot, clears
+ *                          GoToMode and resets back into the AP
  *
- * There is no staging partition: the bootloader writes straight into the live
- * AP region. That is only safe because the AP is not executing at the time, so
- * the erase/write entry points below refuse to run in the MODE=app build.
+ * So the image is staged in RAM rather than in a flash partition, and the AP
+ * partition is written exactly once, at End Update, after the old image has
+ * been backed up. The erase/write entry points below are the AP-side
+ * counterparts of those SoC commands; they refuse in the MODE=app build
+ * because the AP partition is this build's own running image.
+ *
+ * A MODE=boot build does not exist yet. Whoever writes one has to reproduce
+ * the sequence above - including the APP_BACKUP_PARTITION copy - or it will
+ * not be a drop-in replacement for the IAP that is in the field today.
  *
  * All addresses come from hal_flash_map.h, which both builds share.
  */
@@ -212,7 +222,9 @@ bool hal_flash_erase_fw_update_partition(void)
 #if defined(APP_RUN)
     /* The AP partition is this build's own code. Erasing it would fault on the
      * next instruction fetch, so refuse rather than brick the unit - the SoC
-     * gets a clean failure and the update belongs in the MODE=boot build. */
+     * gets a clean failure and the update belongs in the MODE=boot build.
+     * Note the legacy IAP does not erase here either: Erase Code only arms a
+     * flag, and all flash work happens at End Update. */
     return false;
 #else
     return flash_erase_sector(APP_PARTITION);
@@ -244,7 +256,9 @@ void hal_flash_read_fw_update_data(uint32_t start_addr, uint8_t *data, uint16_t 
 }
 
 /* ------------------------------------------------------------------------
- * Not applicable to the legacy model - see the header.
+ * Not part of the legacy chimera3 model - it has no staging partition to hand
+ * off and no recovery key. Kept so the shared firmware-update interface links
+ * the same way on every board.
  * ------------------------------------------------------------------------ */
 
 void hal_flash_set_fw_update_data_size(uint32_t fw_size)

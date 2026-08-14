@@ -97,7 +97,7 @@ LED_COMM_STATUS mid_get_soc_lcb_comm_timeout_status(void)
         case SOC_LCB_COMM_TIMEOUT_STATUS:
             last_cmd_len = hal_get_soc_lcb_last_cmd(last_cmd_buffer);
             mid_log_print(LOG_INFO, "SoC and LCB timeout last cmd : ");
-            for (int i = 0; i < last_cmd_len; i++) {
+            for(int i = 0; i < last_cmd_len; i++) {
                 printf("%02X ", last_cmd_buffer[i]);
             }
             printf("\r\n");

@@ -163,7 +163,7 @@ void mid_tca8418_keypad_event(void *p_event_data, uint16_t event_size)
     }
     mid_soc_cmd_send(CMD_EVENT_KEY, CMD_RESULT_CODE_SUCCESS, cmd_data, 3);
     
-    if (data[0]) {
+    if(data[0]) {
         app_control_tone(0x01);
     }
 }

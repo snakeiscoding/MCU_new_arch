@@ -78,7 +78,7 @@ void mid_lcb_cmd_receive(void *p_event_data, uint16_t event_size)
 	uint16_t data_len = event_size;
 #ifdef LCB_CMD_DEBUG
     mid_log_print(LOG_INFO, "LCB cmd rx : ");
-    for (int i = 0; i < data_len; i++) {
+    for(int i = 0; i < data_len; i++) {
         printf("%02X ", data[i]);
     }
     printf("\r\n");

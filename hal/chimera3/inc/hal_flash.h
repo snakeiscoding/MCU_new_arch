@@ -5,11 +5,14 @@
 #include <stdint.h>
 
 /*
- * chimera3 follows the legacy IAP model: the bootloader hosts the update
- * session and programs the AP partition in place. There is no staging area, so
- * the erase/write entry points are only meaningful in the MODE=boot build -
- * in the MODE=app build they refuse, because the AP partition is the running
- * image.
+ * chimera3 interoperates with the existing legacy IAP: the AP only latches
+ * GoToMode and resets, and the IAP then hosts the whole update session. Under
+ * that model the image is staged in SRAM and committed to the AP partition in
+ * one shot at End Update - see hal_flash.c for the full sequence.
+ *
+ * The erase/write entry points below are therefore only meaningful in a
+ * MODE=boot build, which does not exist yet. In the MODE=app build they
+ * refuse, because the AP partition is the running image.
  */
 bool hal_flash_erase_fw_update_partition(void);
 bool hal_flash_write_fw_update_data(uint32_t start_addr, uint8_t *data, uint32_t len);
