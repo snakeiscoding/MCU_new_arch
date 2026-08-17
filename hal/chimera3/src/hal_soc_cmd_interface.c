@@ -54,6 +54,52 @@ uint16_t hal_set_ext_12v_power(uint8_t status)
     return CMD_RESULT_CODE_SUCCESS;
 }
 
+/* IWDG, carried over from the legacy PowerCtrl.c SetIntoMCUWatchdog():
+ * LSI (~32kHz) / 64 = 500Hz, reload 4095 -> 4096/500 = ~8.19s before the
+ * watchdog fires. hal_reboot_process() refreshes it every 50ms, so there is
+ * ample margin as long as the scheduler keeps running. */
+static IWDG_HandleTypeDef iwdg_handle;
+static bool mcu_watchdog_started = false;
+
+uint16_t hal_set_mcu_watchdog(bool status)
+{
+    /* The IWDG has no stop bit: once running it runs until reset. The legacy
+     * behaved the same way - SetIntoMCUWatchdog() simply did nothing when the
+     * SoC asked for a disable - so accept and ignore rather than report a
+     * failure the SoC cannot act on. */
+    if(!status || mcu_watchdog_started) {
+        return CMD_RESULT_CODE_SUCCESS;
+    }
+
+    iwdg_handle.Instance       = IWDG;
+    iwdg_handle.Init.Prescaler = IWDG_PRESCALER_64;
+    iwdg_handle.Init.Reload    = 4095;
+    if(HAL_IWDG_Init(&iwdg_handle) != HAL_OK) {
+        return CMD_RESULT_CODE_FAILURE;
+    }
+
+    mcu_watchdog_started = true;
+    return CMD_RESULT_CODE_SUCCESS;
+}
+
+void hal_mcu_watchdog_refresh(void)
+{
+    if(mcu_watchdog_started) {
+        HAL_IWDG_Refresh(&iwdg_handle);
+    }
+}
+
+/* Mirrors the reset sequence the legacy RebootProcess() used for both the
+ * reboot timer and the SoC watchdog: assert ERP_EN to drop the SoC rail, give
+ * it 100ms to settle, then reset the MCU. */
+void hal_set_soc_mcu_reset(void)
+{
+    hal_gpio_set(ERP_EN_GPIO, GPIO_HIGH);
+    hal_delay_1ms(100);
+    HAL_DeInit();
+    HAL_NVIC_SystemReset();
+}
+
 const char* hal_get_project_name(void)
 {
     return PROJECT_NAME;
