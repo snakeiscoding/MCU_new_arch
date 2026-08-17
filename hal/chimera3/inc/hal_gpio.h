@@ -19,6 +19,11 @@ typedef enum {
     LCB_RS485_WRITE_GPIO,
     LCB_RS485M_EN_GPIO,
     LCB_RS485C_EN_GPIO,
+    VOICE_NRST_GPIO,
+    VOICE_S1_GPIO,
+    VOICE_S2_GPIO,
+    VOICE_S3_GPIO,
+    VOICE_S4_GPIO,
     OUTPUT_GPIO_TOTAL_NUM,
 } output_gpio_list_num;
 
@@ -58,6 +63,45 @@ static inline void gpio_i_clk_en(void) { __HAL_RCC_GPIOI_CLK_ENABLE(); }
 #define LCB_RS485_WRITE_GPIO_PULL   GPIO_NOPULL
 #define LCB_RS485_WRITE_GPIO_SPEED  GPIO_SPEED_FREQ_VERY_HIGH
 #define LCB_RS485_WRITE_GPIO_CLK    gpio_a_clk_en
+
+/* AP890XX buzzer. The legacy Buzzer_AP890XX.c only ever drove nRST and S4 low
+ * and never drove either high again, so both are simply parked low here. The
+ * tone itself is a pulse on one of S1/S2/S3. */
+#define VOICE_NRST_GPIO_PIN         GPIO_PIN_12
+#define VOICE_NRST_GPIO_PORT        GPIOA
+#define VOICE_NRST_GPIO_MODE        GPIO_MODE_OUTPUT_PP
+#define VOICE_NRST_GPIO_PULL        GPIO_NOPULL
+#define VOICE_NRST_GPIO_SPEED       GPIO_SPEED_FREQ_VERY_HIGH
+#define VOICE_NRST_GPIO_CLK         gpio_a_clk_en
+
+//GPIO_E OUTPUT
+#define VOICE_S1_GPIO_PIN           GPIO_PIN_0
+#define VOICE_S1_GPIO_PORT          GPIOE
+#define VOICE_S1_GPIO_MODE          GPIO_MODE_OUTPUT_PP
+#define VOICE_S1_GPIO_PULL          GPIO_NOPULL
+#define VOICE_S1_GPIO_SPEED         GPIO_SPEED_FREQ_VERY_HIGH
+#define VOICE_S1_GPIO_CLK           gpio_e_clk_en
+
+#define VOICE_S2_GPIO_PIN           GPIO_PIN_1
+#define VOICE_S2_GPIO_PORT          GPIOE
+#define VOICE_S2_GPIO_MODE          GPIO_MODE_OUTPUT_PP
+#define VOICE_S2_GPIO_PULL          GPIO_NOPULL
+#define VOICE_S2_GPIO_SPEED         GPIO_SPEED_FREQ_VERY_HIGH
+#define VOICE_S2_GPIO_CLK           gpio_e_clk_en
+
+#define VOICE_S3_GPIO_PIN           GPIO_PIN_2
+#define VOICE_S3_GPIO_PORT          GPIOE
+#define VOICE_S3_GPIO_MODE          GPIO_MODE_OUTPUT_PP
+#define VOICE_S3_GPIO_PULL          GPIO_NOPULL
+#define VOICE_S3_GPIO_SPEED         GPIO_SPEED_FREQ_VERY_HIGH
+#define VOICE_S3_GPIO_CLK           gpio_e_clk_en
+
+#define VOICE_S4_GPIO_PIN           GPIO_PIN_3
+#define VOICE_S4_GPIO_PORT          GPIOE
+#define VOICE_S4_GPIO_MODE          GPIO_MODE_OUTPUT_PP
+#define VOICE_S4_GPIO_PULL          GPIO_NOPULL
+#define VOICE_S4_GPIO_SPEED         GPIO_SPEED_FREQ_VERY_HIGH
+#define VOICE_S4_GPIO_CLK           gpio_e_clk_en
 
 //GPIO_C INPUT
 #define FAN_RPM_GPIO_PIN            GPIO_PIN_8

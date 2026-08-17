@@ -4,6 +4,12 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+/* hal_control_tone() drives the buzzer pins directly and arms the 20ms
+ * release in the timer handler. hal_set_tone_status() is the 0x0001 command
+ * entry point; a later keypad path can call hal_control_tone() straight. */
+void hal_control_tone(uint8_t status, bool play);
+uint16_t hal_set_tone_status(uint8_t status);
+
 uint16_t hal_set_fan_status(uint8_t status);
 
 uint16_t hal_set_ext_12v_power(uint8_t status);

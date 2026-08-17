@@ -4,9 +4,72 @@
 #include "hal_pwm.h"
 #include "hal_soc_cmd_interface.h"
 #include "hal_systick.h"
+#include "hal_timer_handler.h"
 #include "hal_uart.h"
 #include "mid_erp_flow.h"
 #include "mid_soc_cmd.h"
+
+/* AP890XX buzzer.
+ *
+ * The legacy split this in two: SetTone() only latched enable/type, and the
+ * sound was produced later by BuzzerTrigerPrecess() when MatrixKey.c saw a key
+ * press. chimera3 has no keypad wired up in this build, so a faithful port
+ * would leave the Tone command with no observable effect at all. This follows
+ * the vortex2 convention instead - the command itself plays the tone - which
+ * keeps 0x0001 verifiable on its own. When the matrix keypad is added later it
+ * can call hal_control_tone() on a key press and both paths will beep.
+ *
+ * The pulse width and the pin pattern are the legacy's: nRST and S4 low, one
+ * of S1/S2/S3 high for 20ms, then all low. The legacy used a blocking
+ * HAL_Delay(20); here the timer handler releases it instead. */
+#define TOGGLE_TONE ((uint8_t)0x00)
+#define LOW_TONE    ((uint8_t)0x01)
+#define MID_TONE    ((uint8_t)0x02)
+#define HIGH_TONE   ((uint8_t)0x03)
+
+static bool tone_enabled = true;
+
+void hal_control_tone(uint8_t status, bool play)
+{
+    if(!play) {
+        hal_gpio_set(VOICE_S1_GPIO, GPIO_LOW);
+        hal_gpio_set(VOICE_S2_GPIO, GPIO_LOW);
+        hal_gpio_set(VOICE_S3_GPIO, GPIO_LOW);
+        return;
+    }
+    
+    hal_gpio_set(VOICE_NRST_GPIO, GPIO_LOW);
+    hal_gpio_set(VOICE_S4_GPIO, GPIO_LOW);
+
+    hal_gpio_set(VOICE_S1_GPIO, (status == LOW_TONE)  ? GPIO_HIGH : GPIO_LOW);
+    hal_gpio_set(VOICE_S2_GPIO, (status == MID_TONE)  ? GPIO_HIGH : GPIO_LOW);
+    hal_gpio_set(VOICE_S3_GPIO, (status == HIGH_TONE) ? GPIO_HIGH : GPIO_LOW);
+
+    hal_set_tone_start_timer();
+}
+
+uint16_t hal_set_tone_status(uint8_t status)
+{
+    if(status == TOGGLE_TONE) {
+        tone_enabled = !tone_enabled;
+        return CMD_RESULT_CODE_SUCCESS;
+    }
+
+    if(status < LOW_TONE || status > HIGH_TONE) {
+        return CMD_RESULT_CODE_INVALID_PARAMETERS;
+    }
+
+    /* A tone request while muted is a valid request that simply produces no
+     * sound, not a bad parameter, so it still reports success. Note this makes
+     * "played" and "muted" indistinguishable over the wire - the log line
+     * below is the only way to tell them apart, which matters because
+     * tone_enabled resets to true on every MCU reset while the host's idea of
+     * the mute state does not. */
+     if(tone_enabled) {
+        hal_control_tone(status, true);
+    }
+    return CMD_RESULT_CODE_SUCCESS;
+}
 
 uint16_t hal_set_fan_status(uint8_t status)
 {
