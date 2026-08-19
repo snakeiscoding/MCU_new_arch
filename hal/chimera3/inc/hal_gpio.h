@@ -37,6 +37,10 @@ typedef enum {
     KEYH_D4_GPIO,
     KEYH_D5_GPIO,
     KEYH_D6_GPIO,
+    CSAFE_PWR_EN_GPIO,
+    RFID_5V_EN_GPIO,
+    TV_12V_EN_GPIO,
+    HR_5V_EN_GPIO,
     OUTPUT_GPIO_TOTAL_NUM,
 } output_gpio_list_num;
 
@@ -86,6 +90,24 @@ static inline void gpio_i_clk_en(void) { __HAL_RCC_GPIOI_CLK_ENABLE(); }
 #define VOICE_NRST_GPIO_PULL        GPIO_NOPULL
 #define VOICE_NRST_GPIO_SPEED       GPIO_SPEED_FREQ_VERY_HIGH
 #define VOICE_NRST_GPIO_CLK         gpio_a_clk_en
+
+/* Single-pin power rails, all active high and all enabled at boot - the legacy
+ * PwrFlowCtrl[] brings every one of them up with GPIO_PIN_SET, and its runtime
+ * switch (the generic branch at the end of PwrPinCtrl()) writes the requested
+ * enable bit straight to the pin. Csafe, RFID 5V, tuner 12V and heart rate 5V
+ * need nothing beyond that one write; Qi and Ext 12V are the two that do, and
+ * they are handled separately.
+ *
+ * Note PB4 doubles as NJTRST. That is a JTAG-only alternate function, not SWD,
+ * so driving it as an output leaves the SWD debug port intact - the legacy
+ * drove this same pin as Csafe_PWR_EN. */
+//GPIO_B OUTPUT
+#define CSAFE_PWR_EN_GPIO_PIN       GPIO_PIN_4
+#define CSAFE_PWR_EN_GPIO_PORT      GPIOB
+#define CSAFE_PWR_EN_GPIO_MODE      GPIO_MODE_OUTPUT_PP
+#define CSAFE_PWR_EN_GPIO_PULL      GPIO_NOPULL
+#define CSAFE_PWR_EN_GPIO_SPEED     GPIO_SPEED_FREQ_VERY_HIGH
+#define CSAFE_PWR_EN_GPIO_CLK       gpio_b_clk_en
 
 //GPIO_E OUTPUT
 #define VOICE_S1_GPIO_PIN           GPIO_PIN_0
@@ -217,6 +239,20 @@ static inline void gpio_i_clk_en(void) { __HAL_RCC_GPIOI_CLK_ENABLE(); }
 #define ERP_EN_GPIO_SPEED           GPIO_SPEED_FREQ_VERY_HIGH
 #define ERP_EN_GPIO_CLK             gpio_d_clk_en
 
+#define HR_5V_EN_GPIO_PIN           GPIO_PIN_3
+#define HR_5V_EN_GPIO_PORT          GPIOD
+#define HR_5V_EN_GPIO_MODE          GPIO_MODE_OUTPUT_PP
+#define HR_5V_EN_GPIO_PULL          GPIO_NOPULL
+#define HR_5V_EN_GPIO_SPEED         GPIO_SPEED_FREQ_VERY_HIGH
+#define HR_5V_EN_GPIO_CLK           gpio_d_clk_en
+
+#define TV_12V_EN_GPIO_PIN          GPIO_PIN_7
+#define TV_12V_EN_GPIO_PORT         GPIOD
+#define TV_12V_EN_GPIO_MODE         GPIO_MODE_OUTPUT_PP
+#define TV_12V_EN_GPIO_PULL         GPIO_NOPULL
+#define TV_12V_EN_GPIO_SPEED        GPIO_SPEED_FREQ_VERY_HIGH
+#define TV_12V_EN_GPIO_CLK          gpio_d_clk_en
+
 //GPIO_F OUTPUT
 #define ONOFF_GPIO_PIN              GPIO_PIN_4
 #define ONOFF_GPIO_PORT             GPIOF
@@ -245,6 +281,13 @@ static inline void gpio_i_clk_en(void) { __HAL_RCC_GPIOI_CLK_ENABLE(); }
 #define EXT12V_EN_GPIO_PULL         GPIO_NOPULL
 #define EXT12V_EN_GPIO_SPEED        GPIO_SPEED_FREQ_VERY_HIGH
 #define EXT12V_EN_GPIO_CLK          gpio_f_clk_en
+
+#define RFID_5V_EN_GPIO_PIN         GPIO_PIN_15
+#define RFID_5V_EN_GPIO_PORT        GPIOF
+#define RFID_5V_EN_GPIO_MODE        GPIO_MODE_OUTPUT_PP
+#define RFID_5V_EN_GPIO_PULL        GPIO_NOPULL
+#define RFID_5V_EN_GPIO_SPEED       GPIO_SPEED_FREQ_VERY_HIGH
+#define RFID_5V_EN_GPIO_CLK         gpio_f_clk_en
 
 //GPIO_G OUTPUT
 #define EXT_EN_GPIO_PIN             GPIO_PIN_5

@@ -14,6 +14,14 @@ void hal_play_key_tone(void);
 
 uint16_t hal_set_fan_status(uint8_t status);
 
+/* Single-pin power rails, active high. Any non-zero status enables, as in the
+ * legacy SetPwrEn(). Ext 12V below is the one rail that needs more than a
+ * single pin. */
+uint16_t hal_set_csafe_power(uint8_t status);
+uint16_t hal_set_rfid_power(uint8_t status);
+uint16_t hal_set_tv_tuner_12v_power(uint8_t status);
+uint16_t hal_set_hr_rate_power(uint8_t status);
+
 uint16_t hal_set_ext_12v_power(uint8_t status);
 
 const char* hal_get_project_name(void);

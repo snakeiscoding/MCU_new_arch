@@ -106,6 +106,42 @@ uint16_t hal_set_fan_status(uint8_t status)
 #define POWER_ENABLE        ((uint8_t)0x01)
 #define POWER_EXT12V_ONLY   ((uint8_t)0x02)
 
+/* The four single-pin rails: csafe, RFID 5V, tuner 12V and heart rate 5V. All
+ * are active high, and the legacy runtime switch for them is a single GPIO
+ * write - the generic branch at the end of PwrPinCtrl(), reached once
+ * SetPwrEn() has stored the requested enable bit. The 35-entry PwrFlowCtrl[]
+ * boot sequence is a separate concern and is not needed here;
+ * hal_gpio_default_state_set() already brings all four up.
+ *
+ * Any non-zero status enables, matching legacy SetPwrEn(), which collapsed
+ * every non-zero byte to 1 rather than rejecting it. Nothing here can fail, so
+ * the result is always SUCCESS. */
+static uint16_t set_single_pin_power(output_gpio_list_num gpio, uint8_t status)
+{
+    hal_gpio_set(gpio, (status == POWER_DISABLE) ? GPIO_LOW : GPIO_HIGH);
+    return CMD_RESULT_CODE_SUCCESS;
+}
+
+uint16_t hal_set_csafe_power(uint8_t status)
+{
+    return set_single_pin_power(CSAFE_PWR_EN_GPIO, status);
+}
+
+uint16_t hal_set_rfid_power(uint8_t status)
+{
+    return set_single_pin_power(RFID_5V_EN_GPIO, status);
+}
+
+uint16_t hal_set_tv_tuner_12v_power(uint8_t status)
+{
+    return set_single_pin_power(TV_12V_EN_GPIO, status);
+}
+
+uint16_t hal_set_hr_rate_power(uint8_t status)
+{
+    return set_single_pin_power(HR_5V_EN_GPIO, status);
+}
+
 uint16_t hal_set_ext_12v_power(uint8_t status)
 {
     if(status == POWER_DISABLE) {
