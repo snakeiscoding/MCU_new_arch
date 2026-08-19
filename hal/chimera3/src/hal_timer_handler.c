@@ -1,5 +1,6 @@
 #include "app_soc_cmd_control_func.h"
 #include "app_soc_cmd_watchdog_func.h"
+#include "hal_key_handler.h"
 #include "hal_soc_cmd_interface.h"
 #include "hal_timer_handler.h"
 #include "mid_erp_flow.h"
@@ -84,6 +85,8 @@ void hal_1ms_tick_handler(void *p_event_data, uint16_t event_size)
     mid_erp_status_handler();
 
     hal_tone_on_handler();
+
+    hal_key_handler_1ms();
     
     if((time_1ms - reboot_process_last_time) >= REBOOT_PROCESS_PERIOD_MS) {
         reboot_process_last_time = time_1ms;

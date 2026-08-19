@@ -9,6 +9,8 @@
  * entry point; a later keypad path can call hal_control_tone() straight. */
 void hal_control_tone(uint8_t status, bool play);
 uint16_t hal_set_tone_status(uint8_t status);
+/* Replays the latched tone as key press feedback, respecting the mute flag. */
+void hal_play_key_tone(void);
 
 uint16_t hal_set_fan_status(uint8_t status);
 

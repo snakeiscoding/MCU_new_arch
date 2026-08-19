@@ -28,6 +28,10 @@
 #define HIGH_TONE   ((uint8_t)0x03)
 
 static bool tone_enabled = true;
+/* The tone the keypad replays. The legacy kept exactly this latch - SetTone()
+ * stored tone_type and BuzzerTrigerPrecess() played it on a key press - and
+ * defaulted it to LOW_TONE. */
+static uint8_t tone_type = LOW_TONE;
 
 void hal_control_tone(uint8_t status, bool play)
 {
@@ -65,10 +69,21 @@ uint16_t hal_set_tone_status(uint8_t status)
      * below is the only way to tell them apart, which matters because
      * tone_enabled resets to true on every MCU reset while the host's idea of
      * the mute state does not. */
-     if(tone_enabled) {
+    tone_type = status;
+    if(tone_enabled) {
         hal_control_tone(status, true);
     }
     return CMD_RESULT_CODE_SUCCESS;
+}
+
+/* Key press feedback. Honours the mute flag, which hal_control_tone() itself
+ * does not - the legacy BuzzerTrigerPrecess() checked tone_enable before doing
+ * anything, and the keypad is the path that check was written for. */
+void hal_play_key_tone(void)
+{
+    if(tone_enabled) {
+        hal_control_tone(tone_type, true);
+    }
 }
 
 uint16_t hal_set_fan_status(uint8_t status)

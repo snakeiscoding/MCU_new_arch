@@ -5,8 +5,15 @@
 
 typedef enum {
     FAN_RPM_GPIO = 0,
+    KEYV_D1_GPIO,
+    KEYV_D2_GPIO,
+    SAFETY_KEY_GPIO,
     INPUT_GPIO_TOTAL_NUM,
 } input_gpio_list_num;
+
+/* Inputs that are polled rather than interrupt driven carry this instead of an
+ * EXTI line, so hal_input_gpio_init() knows to skip the NVIC setup. */
+#define GPIO_EXTI_NONE  ((uint16_t)0xFFFF)
 
 typedef enum {
     SYS_NRST_GPIO = 0,
@@ -24,6 +31,12 @@ typedef enum {
     VOICE_S2_GPIO,
     VOICE_S3_GPIO,
     VOICE_S4_GPIO,
+    KEYH_D1_GPIO,
+    KEYH_D2_GPIO,
+    KEYH_D3_GPIO,
+    KEYH_D4_GPIO,
+    KEYH_D5_GPIO,
+    KEYH_D6_GPIO,
     OUTPUT_GPIO_TOTAL_NUM,
 } output_gpio_list_num;
 
@@ -103,6 +116,90 @@ static inline void gpio_i_clk_en(void) { __HAL_RCC_GPIOI_CLK_ENABLE(); }
 #define VOICE_S4_GPIO_SPEED         GPIO_SPEED_FREQ_VERY_HIGH
 #define VOICE_S4_GPIO_CLK           gpio_e_clk_en
 
+/* Matrix keypad, 6 drive lines x 2 sense lines = 12 keys.
+ *
+ * The drive lines idle high; a scan pulls one low at a time and a pressed key
+ * pulls the corresponding sense line low with it. Same topology and the same
+ * pins as the legacy MatrixKey.c.
+ *
+ * The sense lines are given an internal pull-up. The legacy left every input at
+ * GPIO_NOPULL and relied on the board's own pull-ups (its GPIOE pull-up block
+ * is commented out), but for a drive-low matrix a pull-up is the correct idle
+ * state and an internal one simply parallels an external one. If the board
+ * turns out to need the legacy's exact configuration, change these two to
+ * GPIO_NOPULL. */
+#define KEYH_D1_GPIO_PIN            GPIO_PIN_7
+#define KEYH_D1_GPIO_PORT           GPIOE
+#define KEYH_D1_GPIO_MODE           GPIO_MODE_OUTPUT_PP
+#define KEYH_D1_GPIO_PULL           GPIO_NOPULL
+#define KEYH_D1_GPIO_SPEED          GPIO_SPEED_FREQ_VERY_HIGH
+#define KEYH_D1_GPIO_CLK            gpio_e_clk_en
+
+#define KEYH_D2_GPIO_PIN            GPIO_PIN_8
+#define KEYH_D2_GPIO_PORT           GPIOE
+#define KEYH_D2_GPIO_MODE           GPIO_MODE_OUTPUT_PP
+#define KEYH_D2_GPIO_PULL           GPIO_NOPULL
+#define KEYH_D2_GPIO_SPEED          GPIO_SPEED_FREQ_VERY_HIGH
+#define KEYH_D2_GPIO_CLK            gpio_e_clk_en
+
+#define KEYH_D3_GPIO_PIN            GPIO_PIN_9
+#define KEYH_D3_GPIO_PORT           GPIOE
+#define KEYH_D3_GPIO_MODE           GPIO_MODE_OUTPUT_PP
+#define KEYH_D3_GPIO_PULL           GPIO_NOPULL
+#define KEYH_D3_GPIO_SPEED          GPIO_SPEED_FREQ_VERY_HIGH
+#define KEYH_D3_GPIO_CLK            gpio_e_clk_en
+
+#define KEYH_D4_GPIO_PIN            GPIO_PIN_10
+#define KEYH_D4_GPIO_PORT           GPIOE
+#define KEYH_D4_GPIO_MODE           GPIO_MODE_OUTPUT_PP
+#define KEYH_D4_GPIO_PULL           GPIO_NOPULL
+#define KEYH_D4_GPIO_SPEED          GPIO_SPEED_FREQ_VERY_HIGH
+#define KEYH_D4_GPIO_CLK            gpio_e_clk_en
+
+#define KEYH_D5_GPIO_PIN            GPIO_PIN_11
+#define KEYH_D5_GPIO_PORT           GPIOE
+#define KEYH_D5_GPIO_MODE           GPIO_MODE_OUTPUT_PP
+#define KEYH_D5_GPIO_PULL           GPIO_NOPULL
+#define KEYH_D5_GPIO_SPEED          GPIO_SPEED_FREQ_VERY_HIGH
+#define KEYH_D5_GPIO_CLK            gpio_e_clk_en
+
+#define KEYH_D6_GPIO_PIN            GPIO_PIN_12
+#define KEYH_D6_GPIO_PORT           GPIOE
+#define KEYH_D6_GPIO_MODE           GPIO_MODE_OUTPUT_PP
+#define KEYH_D6_GPIO_PULL           GPIO_NOPULL
+#define KEYH_D6_GPIO_SPEED          GPIO_SPEED_FREQ_VERY_HIGH
+#define KEYH_D6_GPIO_CLK            gpio_e_clk_en
+
+//GPIO_E INPUT (polled)
+#define KEYV_D1_GPIO_PIN            GPIO_PIN_13
+#define KEYV_D1_GPIO_PORT           GPIOE
+#define KEYV_D1_GPIO_MODE           GPIO_MODE_INPUT
+#define KEYV_D1_GPIO_PULL           GPIO_PULLUP
+#define KEYV_D1_GPIO_SPEED          GPIO_SPEED_FREQ_VERY_HIGH
+#define KEYV_D1_GPIO_EXTI           GPIO_EXTI_NONE
+#define KEYV_D1_GPIO_CLK            gpio_e_clk_en
+
+#define KEYV_D2_GPIO_PIN            GPIO_PIN_14
+#define KEYV_D2_GPIO_PORT           GPIOE
+#define KEYV_D2_GPIO_MODE           GPIO_MODE_INPUT
+#define KEYV_D2_GPIO_PULL           GPIO_PULLUP
+#define KEYV_D2_GPIO_SPEED          GPIO_SPEED_FREQ_VERY_HIGH
+#define KEYV_D2_GPIO_EXTI           GPIO_EXTI_NONE
+#define KEYV_D2_GPIO_CLK            gpio_e_clk_en
+
+/* Safety key / E-Stop (the legacy MCU_SW_POSITION). Low means triggered.
+ * Polled here rather than run off EXTI as the legacy did - its handler used a
+ * blocking HAL_Delay(10) inside the ISR to debounce, which this architecture
+ * gets for free from the 1ms tick. */
+//GPIO_A INPUT (polled)
+#define SAFETY_KEY_GPIO_PIN         GPIO_PIN_6
+#define SAFETY_KEY_GPIO_PORT        GPIOA
+#define SAFETY_KEY_GPIO_MODE        GPIO_MODE_INPUT
+#define SAFETY_KEY_GPIO_PULL        GPIO_NOPULL
+#define SAFETY_KEY_GPIO_SPEED       GPIO_SPEED_FREQ_VERY_HIGH
+#define SAFETY_KEY_GPIO_EXTI        GPIO_EXTI_NONE
+#define SAFETY_KEY_GPIO_CLK         gpio_a_clk_en
+
 //GPIO_C INPUT
 #define FAN_RPM_GPIO_PIN            GPIO_PIN_8
 #define FAN_RPM_GPIO_PORT           GPIOC
@@ -169,5 +266,6 @@ void hal_gpio_module_init();
 void hal_input_gpio_init(input_gpio_list_num gpio_num);
 void hal_output_gpio_init(output_gpio_list_num gpio_num);
 void hal_gpio_set(output_gpio_list_num gpio_num, gpio_status set_gpio_status);
+gpio_status hal_gpio_get(input_gpio_list_num gpio_num);
 
 #endif //HAL_GPIO_H__
