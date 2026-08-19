@@ -22,6 +22,13 @@ uint16_t hal_set_rfid_power(uint8_t status);
 uint16_t hal_set_tv_tuner_12v_power(uint8_t status);
 uint16_t hal_set_hr_rate_power(uint8_t status);
 
+/* Qi. Power target 0x09 switches QI_POWER on/off; command 0x0009 selects the
+ * rail - 0x00 = 5V/5W, 0x01 = 12V/15W, per the legacy SetQIPower() encoding.
+ * The two rails share one output net, so switching is break-before-make with a
+ * 100ms gap. There is no 9V rail. */
+uint16_t hal_set_qi_power(uint8_t status);
+uint16_t hal_set_qi_status(uint8_t status);
+
 uint16_t hal_set_ext_12v_power(uint8_t status);
 
 const char* hal_get_project_name(void);

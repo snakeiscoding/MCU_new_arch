@@ -142,6 +142,74 @@ uint16_t hal_set_hr_rate_power(uint8_t status)
     return set_single_pin_power(HR_5V_EN_GPIO, status);
 }
 
+/* Qi charging. Two P-FET load switches (Q78/Q79 and Q80/Q81, NCE40P40K back to
+ * back) both feed the single QI_POWER net: QI_12W_EN gates +12V_QI at 15W,
+ * QI_5W_EN gates +5V_SW at 5W, where +5V_SW is the U94 (MP2329GG) buck off
+ * +12V_SW. Both enables are active high.
+ *
+ * Because both switches drive the same output net, the two must never be on at
+ * once - that would tie +12V_QI to the buck's output. Every transition is
+ * therefore break-before-make: drop the other rail, wait, then raise the wanted
+ * one. The 100ms is the legacy's, and on this topology it is load bearing
+ * rather than cosmetic. It blocks the main loop, the same trade
+ * hal_set_ext_12v_power() already makes.
+ *
+ * The board has no 9V rail, so the App's "Default 9V" / "9V" / "12V" labels are
+ * wrong. The encoding kept here is the legacy SetQIPower() one - 0x00 selects
+ * 5V, 0x01 selects 12V - because the SoC, not the test app, is the real client.
+ *
+ * Voltage and on/off stay separate commands as in the legacy: 0x0009 latches
+ * which rail, and power target 0x09 switches QI_POWER on or off. Choosing a
+ * voltage while Qi is off only latches it - legacy SetQIPower() left both pins
+ * low in that case - and it takes effect at the next enable. Note ERP_EN also
+ * shuts the U94 buck down through Q77, so the 5W rail collapses in ERP
+ * regardless of QI_5W_EN. */
+#define QI_VOLTAGE_5V       ((uint8_t)0x00)
+#define QI_VOLTAGE_12V      ((uint8_t)0x01)
+
+static bool qi_enabled = true;
+static uint8_t qi_voltage = QI_VOLTAGE_5V;
+
+static void qi_power_apply(void)
+{
+    if(!qi_enabled) {
+        hal_gpio_set(QI_12W_EN_GPIO, GPIO_LOW);
+        hal_gpio_set(QI_5W_EN_GPIO, GPIO_LOW);
+        return;
+    }
+
+    if(qi_voltage == QI_VOLTAGE_12V) {
+        hal_gpio_set(QI_5W_EN_GPIO, GPIO_LOW);
+        hal_delay_1ms(100);
+        hal_gpio_set(QI_12W_EN_GPIO, GPIO_HIGH);
+    }
+    else {
+        hal_gpio_set(QI_12W_EN_GPIO, GPIO_LOW);
+        hal_delay_1ms(100);
+        hal_gpio_set(QI_5W_EN_GPIO, GPIO_HIGH);
+    }
+}
+
+uint16_t hal_set_qi_power(uint8_t status)
+{
+    qi_enabled = (status != POWER_DISABLE);
+    qi_power_apply();
+    return CMD_RESULT_CODE_SUCCESS;
+}
+
+uint16_t hal_set_qi_status(uint8_t status)
+{
+    if(status != QI_VOLTAGE_5V && status != QI_VOLTAGE_12V) {
+        return CMD_RESULT_CODE_INVALID_PARAMETERS;
+    }
+
+    qi_voltage = status;
+    if(qi_enabled) {
+        qi_power_apply();
+    }
+    return CMD_RESULT_CODE_SUCCESS;
+}
+
 uint16_t hal_set_ext_12v_power(uint8_t status)
 {
     if(status == POWER_DISABLE) {

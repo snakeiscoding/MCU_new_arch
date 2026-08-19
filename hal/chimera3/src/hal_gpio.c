@@ -54,6 +54,8 @@ static const output_gpio_config_t OUTPUT_GPIO_LIST[OUTPUT_GPIO_TOTAL_NUM] = {
     [RFID_5V_EN_GPIO] = {RFID_5V_EN_GPIO_PORT, RFID_5V_EN_GPIO_PIN, RFID_5V_EN_GPIO_MODE, RFID_5V_EN_GPIO_PULL, RFID_5V_EN_GPIO_SPEED, RFID_5V_EN_GPIO_CLK},
     [TV_12V_EN_GPIO] = {TV_12V_EN_GPIO_PORT, TV_12V_EN_GPIO_PIN, TV_12V_EN_GPIO_MODE, TV_12V_EN_GPIO_PULL, TV_12V_EN_GPIO_SPEED, TV_12V_EN_GPIO_CLK},
     [HR_5V_EN_GPIO] = {HR_5V_EN_GPIO_PORT, HR_5V_EN_GPIO_PIN, HR_5V_EN_GPIO_MODE, HR_5V_EN_GPIO_PULL, HR_5V_EN_GPIO_SPEED, HR_5V_EN_GPIO_CLK},
+    [QI_5W_EN_GPIO] = {QI_5W_EN_GPIO_PORT, QI_5W_EN_GPIO_PIN, QI_5W_EN_GPIO_MODE, QI_5W_EN_GPIO_PULL, QI_5W_EN_GPIO_SPEED, QI_5W_EN_GPIO_CLK},
+    [QI_12W_EN_GPIO] = {QI_12W_EN_GPIO_PORT, QI_12W_EN_GPIO_PIN, QI_12W_EN_GPIO_MODE, QI_12W_EN_GPIO_PULL, QI_12W_EN_GPIO_SPEED, QI_12W_EN_GPIO_CLK},
 };
 
 void hal_gpio_default_state_set()
@@ -87,6 +89,10 @@ void hal_gpio_default_state_set()
     hal_gpio_set(RFID_5V_EN_GPIO, GPIO_HIGH);
     hal_gpio_set(TV_12V_EN_GPIO, GPIO_HIGH);
     hal_gpio_set(HR_5V_EN_GPIO, GPIO_HIGH);
+    /* Qi comes up on the 5W rail, as PwrFlowCtrl[] had it (QI_5W_EN set,
+     * QI_12W_EN reset). Never raise both, they share the QI_POWER net. */
+    hal_gpio_set(QI_5W_EN_GPIO, GPIO_HIGH);
+    hal_gpio_set(QI_12W_EN_GPIO, GPIO_LOW);
 }
 
 void hal_gpio_module_init()

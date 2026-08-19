@@ -41,6 +41,8 @@ typedef enum {
     RFID_5V_EN_GPIO,
     TV_12V_EN_GPIO,
     HR_5V_EN_GPIO,
+    QI_5W_EN_GPIO,
+    QI_12W_EN_GPIO,
     OUTPUT_GPIO_TOTAL_NUM,
 } output_gpio_list_num;
 
@@ -288,6 +290,26 @@ static inline void gpio_i_clk_en(void) { __HAL_RCC_GPIOI_CLK_ENABLE(); }
 #define RFID_5V_EN_GPIO_PULL        GPIO_NOPULL
 #define RFID_5V_EN_GPIO_SPEED       GPIO_SPEED_FREQ_VERY_HIGH
 #define RFID_5V_EN_GPIO_CLK         gpio_f_clk_en
+
+/* Qi charging rail selection. Two P-FET load switches (Q78/Q79 and Q80/Q81)
+ * both feed the single QI_POWER net: QI_12W_EN gates +12V_QI (15W), QI_5W_EN
+ * gates +5V_SW (5W, produced by the U94 buck off +12V_SW). Both are active
+ * high, and because they share the output net only one may ever be on - see
+ * hal_soc_cmd_interface.c. Boot state is 5W on, 12W off, as PwrFlowCtrl[] had
+ * it. There is no 9V rail on this board. */
+#define QI_5W_EN_GPIO_PIN           GPIO_PIN_6
+#define QI_5W_EN_GPIO_PORT          GPIOF
+#define QI_5W_EN_GPIO_MODE          GPIO_MODE_OUTPUT_PP
+#define QI_5W_EN_GPIO_PULL          GPIO_NOPULL
+#define QI_5W_EN_GPIO_SPEED         GPIO_SPEED_FREQ_VERY_HIGH
+#define QI_5W_EN_GPIO_CLK           gpio_f_clk_en
+
+#define QI_12W_EN_GPIO_PIN          GPIO_PIN_7
+#define QI_12W_EN_GPIO_PORT         GPIOF
+#define QI_12W_EN_GPIO_MODE         GPIO_MODE_OUTPUT_PP
+#define QI_12W_EN_GPIO_PULL         GPIO_NOPULL
+#define QI_12W_EN_GPIO_SPEED        GPIO_SPEED_FREQ_VERY_HIGH
+#define QI_12W_EN_GPIO_CLK          gpio_f_clk_en
 
 //GPIO_G OUTPUT
 #define EXT_EN_GPIO_PIN             GPIO_PIN_5
