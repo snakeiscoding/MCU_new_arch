@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include "hal_erp_handler.h"
 #include "hal_gpio.h"
 #include "hal_stm32f4xx_it.h"
 #include "hal_systick.h"
@@ -174,11 +175,23 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
     if(GPIO_Pin == FAN_RPM_GPIO_PIN) {
         mid_calcu_fan_rpm();
     }
+    /* The keypad sense lines are only EXTI while the MCU is in STOP mode -
+     * hal_erp_handler.c rearms them as the wake source before sleeping and
+     * hal_system_init() returns them to polled inputs after wake. */
+    else if(GPIO_Pin == KEYV_D1_GPIO_PIN || GPIO_Pin == KEYV_D2_GPIO_PIN) {
+        hal_erp_wakeup_flag_set();
+    }
 }
 
 void EXTI9_5_IRQHandler(void)
 {
     HAL_GPIO_EXTI_IRQHandler(FAN_RPM_GPIO_PIN);
+}
+
+void EXTI15_10_IRQHandler(void)
+{
+    HAL_GPIO_EXTI_IRQHandler(KEYV_D1_GPIO_PIN);
+    HAL_GPIO_EXTI_IRQHandler(KEYV_D2_GPIO_PIN);
 }
 
 /******************************************************************************/

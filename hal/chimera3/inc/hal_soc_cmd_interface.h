@@ -31,6 +31,15 @@ uint16_t hal_set_qi_status(uint8_t status);
 
 uint16_t hal_set_ext_12v_power(uint8_t status);
 
+/* ERP (0x0004): 0x00 enter via LCB handshake, 0x01 suspend (no-op), 0x02 SoC
+ * board off. The remaining four are the mid_erp_flow.c hooks; the STOP mode
+ * machinery itself lives in hal_erp_handler.c. */
+uint16_t hal_set_erp_status(uint8_t status);
+void hal_set_erp_soc_power_off(void);
+void hal_set_erp_soc_power_off_success_handler(void);
+void hal_lcb_leave_erp_success_handler(void);
+void hal_lcb_erp_cmd_fail_handler(void);
+
 const char* hal_get_project_name(void);
 uint16_t hal_get_fw_version(void);
 

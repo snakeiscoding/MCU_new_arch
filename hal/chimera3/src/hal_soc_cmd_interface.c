@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include "hal_config.h"
+#include "hal_erp_handler.h"
 #include "hal_gpio.h"
 #include "hal_pwm.h"
 #include "hal_soc_cmd_interface.h"
@@ -7,6 +8,7 @@
 #include "hal_timer_handler.h"
 #include "hal_uart.h"
 #include "mid_erp_flow.h"
+#include "mid_log.h"
 #include "mid_soc_cmd.h"
 
 /* AP890XX buzzer.
@@ -234,6 +236,79 @@ uint16_t hal_set_ext_12v_power(uint8_t status)
         return CMD_RESULT_CODE_INVALID_PARAMETERS;
     }
     return CMD_RESULT_CODE_SUCCESS;
+}
+
+#define ERP_ON              ((uint8_t)0x00)
+#define ERP_SUSPEND         ((uint8_t)0x01)
+#define ERP_POWER_OFF_UCB   ((uint8_t)0x02)
+
+/* SoC rail control for the ERP flow: the first two writes of the legacy
+ * PowerERPProcess(Into_ERP_Mode) and their inverses from Leave_ERP_Mode. */
+static void hal_erp_soc_rail(bool on)
+{
+    if(on) {
+        hal_gpio_set(ERP_EN_GPIO, GPIO_LOW);
+        hal_gpio_set(ONOFF_GPIO, GPIO_HIGH);
+    }
+    else {
+        hal_gpio_set(ERP_EN_GPIO, GPIO_HIGH);
+        hal_gpio_set(ONOFF_GPIO, GPIO_LOW);
+    }
+}
+
+/* 0x0004. Same command encoding as vortex2: 0x00 enters ERP (via the LCB init
+ * handshake), 0x01 is suspend (accepted, nothing to do yet), 0x02 powers the
+ * SoC board off without the rest of the ERP flow. */
+uint16_t hal_set_erp_status(uint8_t status)
+{
+    if(status == ERP_ON) {
+        /* Note: Run 'lcb init' for ERP access in non-GUI mode */
+        mid_erp_status_set(LCB_INIT_STATUS);
+    }
+    else if(status == ERP_SUSPEND) {
+    }
+    else if(status == ERP_POWER_OFF_UCB) {
+        hal_erp_soc_rail(false);
+    }
+    else {
+        return CMD_RESULT_CODE_INVALID_PARAMETERS;
+    }
+    return CMD_RESULT_CODE_SUCCESS;
+}
+
+/* SOC_POWER_OFF_STATUS, 3s in: the SoC was told ERP is coming (the
+ * CMD_EVENT_LCB_STATUS event at the top of that state) and has had 3s to shut
+ * down; drop its rail. The 4s hook below then takes everything else down. */
+void hal_set_erp_soc_power_off(void)
+{
+    hal_erp_soc_rail(false);
+}
+
+void hal_set_erp_soc_power_off_success_handler(void)
+{
+    hal_set_erp_power_off();
+}
+
+/* The LCB answered the leave-ERP command (or its retries ran out - the wake
+ * direction proceeds either way): make sure the SoC is powered. After a STOP
+ * wake hal_system_init() has already restored these defaults; on the boot path
+ * this is what actually turns the SoC on. */
+void hal_lcb_leave_erp_success_handler(void)
+{
+    hal_erp_soc_rail(true);
+}
+
+/* Enter-ERP direction, LCB retries exhausted. vortex2 resets the MCU and SoC
+ * here, but on this target that would make ERP a reboot loop whenever no LCB
+ * is attached (the SoC re-enters ERP after boot and the command fails again).
+ * Proceeding into ERP instead mirrors what the flow already does in the wake
+ * direction - LCB_WAKE_UP_STATUS gives up after the same three tries and
+ * carries on - and matches the legacy chimera3 monitor, which logged
+ * "no reply from LCB" and moved on rather than resetting. */
+void hal_lcb_erp_cmd_fail_handler(void)
+{
+    mid_log_print(LOG_ERROR, "ERP: no LCB reply, entering ERP without it\r\n");
+    mid_erp_status_set(SOC_POWER_OFF_STATUS);
 }
 
 /* IWDG, carried over from the legacy PowerCtrl.c SetIntoMCUWatchdog():
