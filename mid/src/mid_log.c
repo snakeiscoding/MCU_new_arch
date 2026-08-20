@@ -3,7 +3,30 @@
 #include "mid_log.h"
 
 extern volatile uint64_t time_1ms;
-int currentLogLevel = LOG_VERBOSE;
+/* Starts at LOG_VERBOSE so a target that never receives the debug command
+ * behaves exactly as before. app_soc_cmd_control_debug_func() overrides it. */
+static int currentLogLevel = LOG_VERBOSE;
+
+void mid_log_set_level(int level)
+{
+    if(level < LOG_SILENT) {
+        level = LOG_SILENT;
+    }
+    else if(level > LOG_VERBOSE) {
+        level = LOG_VERBOSE;
+    }
+    currentLogLevel = level;
+}
+
+int mid_log_get_level(void)
+{
+    return currentLogLevel;
+}
+
+bool mid_log_level_enabled(uint8_t level)
+{
+    return (int)level <= currentLogLevel;
+}
 
 static const char *mid_log_level_to_string(uint8_t level)
 {
