@@ -16,6 +16,7 @@ enum power_status_enum {
 };
 
 int hal_get_hw_id(void);
+int hal_read_hw_id(void);
 int hal_get_MCB12V_status(void);
 int hal_get_EXT12V_status(void);
 float hal_read_MCB12V_voltage(void);

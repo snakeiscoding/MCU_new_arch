@@ -57,7 +57,7 @@ int mid_soc_cmd_parser(uint8_t *data, uint16_t data_len)
 
     uint8_t crc8_data = mid_soc_cmd_get_crc8(data, data_len - 1);
 #ifdef SOC_CMD_DEBUG
-    mid_log_print(LOG_VERBOSE, "SoC command crc : 0x%02X\r\n", crc8_data);
+    mid_log_print(LOG_INFO, "SoC command crc : 0x%02X\r\n", crc8_data);
 #endif
     if(crc8_data != data[data_len - 1]) {
         mid_log_print(LOG_ERROR, "SoC command crc checksum error!\r\n");
@@ -75,15 +75,11 @@ void mid_soc_cmd_receive(void *p_event_data, uint16_t event_size)
 	uint8_t *data = (uint8_t *)p_event_data;
 	uint16_t data_len = event_size;
 #ifdef SOC_CMD_DEBUG
-    /* The byte loop writes straight to stdout, so the level has to be checked
-     * here - mid_log_print() only filters its own output. */
-    if(mid_log_level_enabled(LOG_VERBOSE)) {
-        mid_log_print(LOG_VERBOSE, "SoC cmd rx : ");
-        for(int i = 0; i < data_len; i++) {
-            printf("%02X ", data[i]);
-        }
-        printf("\r\n");
+    mid_log_print(LOG_INFO, "SoC cmd rx : ");
+    for(int i = 0; i < data_len; i++) {
+        printf("%02X ", data[i]);
     }
+    printf("\r\n");
 #endif
 
     if(mid_soc_cmd_parser(data, data_len) == SOC_CMD_PARSER_SUCCESS) {
@@ -121,13 +117,11 @@ void mid_soc_cmd_send(uint16_t cmd_id, uint16_t cmd_result, uint8_t *data, uint1
     uint16_t cmd_len = mid_soc_cmd_gen(cmd_id, cmd_result, data, data_len, cmd_buffer);
 
 #ifdef SOC_CMD_DEBUG
-    if(mid_log_level_enabled(LOG_VERBOSE)) {
-        mid_log_print(LOG_VERBOSE, "SoC cmd tx : ");
-        for(int i = 0; i < cmd_len; i++) {
-            printf("%02X ", cmd_buffer[i]);
-        }
-        printf("\r\n");
+    mid_log_print(LOG_INFO, "SoC cmd tx : ");
+    for(int i = 0; i < cmd_len; i++) {
+        printf("%02X ", cmd_buffer[i]);
     }
+    printf("\r\n");
 #endif
     hal_soc_cmd_send(cmd_buffer, cmd_len);
 }

@@ -116,18 +116,23 @@ uint16_t hal_set_erp_status(uint8_t status)
 #define POWER_ENABLE        ((uint8_t)0x01)
 #define POWER_SWITCH        ((uint8_t)0x02)
 
+bool hal_csafe_power_state = true;
+bool hal_qi_power_state = true;
+
 uint16_t hal_set_csafe_power(uint8_t status)
 {
     if(status == POWER_DISABLE) {
+        hal_csafe_power_state = false;
         hal_gpio_set(MCU_CSAFE_PEN_GPIO, GPIO_LOW);
     }
     else if(status == POWER_ENABLE) {
-        hal_set_current_monitor(true);
+        hal_csafe_power_state = true;
         hal_gpio_set(MCU_CSAFE_PEN_GPIO, GPIO_HIGH);
     }
     else {
         return CMD_RESULT_CODE_INVALID_PARAMETERS;
     }
+    hal_set_current_monitor(hal_csafe_power_state || hal_qi_power_state);
     return CMD_RESULT_CODE_SUCCESS;
 }
 
@@ -147,18 +152,21 @@ uint16_t hal_set_rfid_power(uint8_t status)
 
 uint16_t hal_set_qi_power(uint8_t status)
 {
+    uint16_t result = CMD_RESULT_CODE_SUCCESS;
     if(status == POWER_DISABLE) {
+        hal_qi_power_state = false;
         hal_gpio_set(QI_9VPEN_GPIO, GPIO_LOW);
         hal_gpio_set(QI_12VPEN_GPIO, GPIO_LOW);
     }
     else if(status == POWER_ENABLE) {
-        hal_set_current_monitor(true);
-        return hal_set_qi_status(hal_get_qi_status());
+        hal_qi_power_state = true;
+        result = hal_set_qi_status(hal_get_qi_status());
     }
     else {
         return CMD_RESULT_CODE_INVALID_PARAMETERS;
     }
-    return CMD_RESULT_CODE_SUCCESS;
+    hal_set_current_monitor(hal_csafe_power_state || hal_qi_power_state);
+    return result;
 }
 
 uint16_t hal_set_hr_rate_power(uint8_t status)
@@ -263,6 +271,9 @@ uint16_t hal_set_mcu_watchdog(bool enable)
 uint8_t qi_status = QI_9V;
 uint8_t hal_get_qi_status()
 {
+    if(qi_status != QI_9V && qi_status != QI_12V) {
+        qi_status = QI_9V;
+    }
     return qi_status;
 }
 uint16_t hal_set_qi_status(uint8_t status)

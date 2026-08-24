@@ -140,11 +140,9 @@ void app_soc_cmd_handler(const SOC_CMD *p_soc_cmd)
     }
     case CMD_UPDATE_READ_CODE:
         break;
-    case CMD_UPDATE_START_UPDATE: {
-        uint8_t *data_ptr = (uint8_t *)p_soc_cmd->cmd_data_buffer;
-        app_soc_cmd_update_start_update_func(data_ptr, p_soc_cmd->cmd_data_len);
+    case CMD_UPDATE_START_UPDATE:
+        app_soc_cmd_update_start_update_func();
         break;
-    }
     case CMD_UPDATE_END_UPDATE:
         app_soc_cmd_update_end_update_func();
         break;

@@ -29,7 +29,6 @@ uint16_t hal_set_mcu_watchdog(bool enable);
 uint8_t hal_get_qi_status(void);
 uint16_t hal_set_qi_status(uint8_t status);
 
-uint8_t hal_get_led_behavior(void);
 uint16_t hal_set_led_behavior(uint8_t status);
 void hal_set_erp_led_behavior(bool status);
 

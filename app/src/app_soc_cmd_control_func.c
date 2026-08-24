@@ -359,15 +359,6 @@ void app_soc_cmd_control_debug_func(uint8_t enable, uint8_t level, uint16_t len)
             soc_debug_mode = false;
         }
         soc_debug_level = level;
-        /* Apply it. The four levels the SoC sends are the LOG_* values one for
-         * one, so nothing needs translating. Clearing the enable flag silences
-         * every level including errors - "debug off" - which is deliberately
-         * distinct from enabling at level 0, "errors only".
-         *
-         * This is new ground rather than a port: the legacy had no runtime
-         * control at all, only a DebugSoC #define in SocUart.c that shipped
-         * commented out. */
-        mid_log_set_level(soc_debug_mode ? (int)soc_debug_level : LOG_SILENT);
     }
     mid_soc_cmd_send(CMD_CONTROL_DEBUG, result, NULL, 0);
 }

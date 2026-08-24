@@ -82,32 +82,17 @@ void app_soc_cmd_update_write_code_func(uint8_t *data, uint16_t len)
         mid_soc_cmd_send(CMD_UPDATE_WRITE_CODE, CMD_RESULT_CODE_SUCCESS, NULL, 0);
     }
 }
-/* Boards without a password keep the current behaviour: accept everything. */
-__attribute__((weak)) bool hal_verify_fw_update_password(uint8_t *data, uint16_t len)
-{
-    (void)data;
-    (void)len;
-    return true;
-}
 
-__attribute__((weak)) void hal_start_fw_update(void) {}
-void app_soc_cmd_update_start_update_func(uint8_t *data, uint16_t len)
- {
-     mid_log_print(LOG_VERBOSE, "%s\r\n", __FUNCTION__);
- 
-    if(!hal_verify_fw_update_password(data, len)) {
-        mid_log_print(LOG_ERROR, "fw update start rejected: bad password\r\n");
-        mid_soc_cmd_send(CMD_UPDATE_START_UPDATE, CMD_RESULT_CODE_INVALID_PASSWORD, NULL, 0);
-        return;
-    }
+void app_soc_cmd_update_start_update_func(void)
+{
+    mid_log_print(LOG_VERBOSE, "%s\r\n", __FUNCTION__);
 
     if(app_soc_cmd_update_get_operation_mode() != UPDATE_MODE)
     {
         app_soc_cmd_update_set_operation_mode(UPDATE_MODE);
     }
     mid_soc_cmd_send(CMD_UPDATE_START_UPDATE, CMD_RESULT_CODE_SUCCESS, NULL, 0);
-    hal_start_fw_update();
- }
+}
 
 __attribute__((weak)) void hal_end_fw_update(void) {}
 void app_soc_cmd_update_end_update_func(void)

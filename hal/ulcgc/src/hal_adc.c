@@ -6,6 +6,13 @@
 
 // #define ADC_DEBUG
 
+/* 
+ * ADC reference voltage calibration history:
+ * 3.35V (initial) -> 3.34V -> 3.37V (current).
+ * Final value was optimized to account for voltage drop and measurement accuracy.
+ */
+#define ADC_VREF  3.37f
+
 #define HW_ID    ADC_CHANNEL_13   /* Hardware version ID   */
 #define MCB_V    ADC_CHANNEL_0    /* MCB 12V voltage (PA0) */
 #define EXT_V    ADC_CHANNEL_11   /* EXT 12V voltage (PC1) */
@@ -33,9 +40,8 @@ uint16_t adc_read_channel(uint8_t channel)
 
 float read_voltage(uint8_t channel)
 {
-    /* Reference voltage adjusted from 3.35V to 3.37V due to voltage drop and measurement accuracy */
     uint16_t adc_value = adc_read_channel(channel);
-    float v = (float)adc_value / 4096.0f * (3.35f + 0.02f);
+    float v = (float)adc_value / 4096.0f * ADC_VREF;
     return roundf(v * 1000.0f) / 1000.0f;
 }
 
@@ -47,9 +53,9 @@ float read_current(uint8_t channel)
 
 int calculate_12v_status(float adc_voltage)
 {
-    if (adc_voltage < 0.1f)   return POWER_12V_NO_POWER;
-    if (adc_voltage < 2.37f)  return POWER_12V_LOW;
-    if (adc_voltage <= 2.78f) return POWER_12V_OK;
+    if(adc_voltage < 0.1f)   return POWER_12V_NO_POWER;
+    if(adc_voltage < 2.37f)  return POWER_12V_LOW;
+    if(adc_voltage <= 2.78f) return POWER_12V_OK;
     return POWER_12V_HIGH;
 }
 
@@ -154,6 +160,9 @@ int hal_get_hw_id(void)
     if((v >= 0)&&(v <= 0.1)) {
         hw_id = hw_k1;
     }
+    else if((v > 0.1) && (v <= 0.4)) {
+        hw_id = hw_k2;
+    }
     else {
         hw_id = hw_no;
     }
@@ -161,11 +170,16 @@ int hal_get_hw_id(void)
     return hw_id;
 }
 
+int hal_read_hw_id(void)
+{
+    return hw_id;
+}
+
 float hal_read_MCB12V_voltage(void)
 {
     float v = 0.0f;
     float mcb_12v = 0.0f;
-    for (int i = 0; i < 10; i++)
+    for(int i = 0; i < 10; i++)
     {
         mcb_12v = read_voltage(MCB_V) * 4.9f;
         v += mcb_12v;
@@ -182,7 +196,7 @@ float hal_read_EXT12V_voltage(void)
 {
     float v = 0.0f;
     float ext_12v = 0.0f;
-    for (int i = 0; i < 10; i++)
+    for(int i = 0; i < 10; i++)
     {
         ext_12v = read_voltage(EXT_V) * 4.9f;
         v += ext_12v;
@@ -199,7 +213,7 @@ float hal_read_MCB12V_current(void)
 {
     float a = 0.0f;
     float mcb_12v_current = 0.0f;
-    for (int i = 0; i < 10; i++)
+    for(int i = 0; i < 10; i++)
     {
         mcb_12v_current = read_current(MCB_I);
         a += mcb_12v_current;
@@ -216,7 +230,7 @@ float hal_read_EXT12V_current(void)
 {
     float a = 0.0f;
     float ext_12v_current = 0.0f;
-    for (int i = 0; i < 10; i++)
+    for(int i = 0; i < 10; i++)
     {
         ext_12v_current = read_current(EXT_I);
         a += ext_12v_current;

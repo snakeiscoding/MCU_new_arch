@@ -29,8 +29,8 @@ void app_soc_cmd_info_version_func(void)
     uint16_t version = app_get_fw_version();
     uint16_t data_len = 2;
     uint8_t data[2];
-    data[0] = version & 0x00FF;
     data[1] = (version & 0xFF00) >> 8;
+    data[0] = version & 0x00FF;
     mid_soc_cmd_send(CMD_INFO_VERSION, CMD_RESULT_CODE_SUCCESS, data, data_len);
     mid_enable_soc_lcb_comm_timer(true);
 }
@@ -107,8 +107,8 @@ void app_soc_cmd_info_fan_speed_func(void)
     uint32_t fan_rpm = mid_get_fan_rpm();
     data[0] = app_get_control_fan_level();
     if(data[0] > 9) {
-        data[1] = fan_rpm & 0x00FF;
-        data[2] = (fan_rpm & 0xFF00) >> 8;
+        data[1] = (fan_rpm & 0xFF00) >> 8;
+        data[2] = fan_rpm & 0x00FF;
     }
     else {
         data[1] = 0;

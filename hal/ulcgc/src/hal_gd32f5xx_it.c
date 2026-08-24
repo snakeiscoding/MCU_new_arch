@@ -253,7 +253,7 @@ void USART0_IRQHandler(void)
         uint16_t rx_count = 1024 - (dma_transfer_number_get(DMA1, DMA_CH2));
 #ifdef UART_LOOPBACK_DEBUG
         printf("usart0 rx : ");
-        for (int i = 0;i < rx_count; i++) {
+        for(int i = 0;i < rx_count; i++) {
             printf("0x%02X ", usart0_rxbuffer[i]);
         }
         printf("\r\n");
@@ -280,7 +280,7 @@ void USART1_IRQHandler(void)
         uint8_t rx_count =256 - (dma_transfer_number_get(DMA0, DMA_CH5));
 #ifdef UART_LOOPBACK_DEBUG
         printf("usart1 rx : ");
-        for (int i = 0;i < rx_count; i++) {
+        for(int i = 0;i < rx_count; i++) {
             printf("0x%02X ", usart1_rxbuffer[i]);
         }
         printf("\r\n");
@@ -307,15 +307,15 @@ void UART3_IRQHandler(void)
         uart3_rx_count = 256 - (dma_transfer_number_get(DMA0, DMA_CH2));
 #ifdef UART_LOOPBACK_DEBUG
         printf("uart3 rx : ");
-        for (int i = 0;i < uart3_rx_count; i++) {
+        for(int i = 0;i < uart3_rx_count; i++) {
             printf("0x%02X ", uart3_rxbuffer[i]);
         }
         printf("\r\n");
 #endif
         mid_sched_event_put((void *)uart3_rxbuffer, uart3_rx_count, mid_lcb_cmd_receive);
         mid_set_soc_lcb_comm_timer();
-        /*if (user_get_rs485_mode() == 0) {
-            if (get_dfu_mode() == 0) {
+        /*if(user_get_rs485_mode() == 0) {
+            if(get_dfu_mode() == 0) {
                 app_sched_event_put((void *)uart3_rxbuffer, uart3_rx_count, sch_rs485_rx_handle);
             }      
         }*/
@@ -339,7 +339,7 @@ void UART6_IRQHandler(void)
 #ifdef UART_LOOPBACK_DEBUG
         uint16_t rx_count = 64 - (dma_transfer_number_get(DMA0, DMA_CH3));
         printf("uart6 rx : ");
-        for (int i = 0;i < rx_count; i++) {
+        for(int i = 0;i < rx_count; i++) {
             printf("0x%02X ", uart6_rxbuffer[i]);
         }
         printf("\r\n");
@@ -512,7 +512,6 @@ void EXTI2_IRQHandler(void)
 {
     if(RESET != exti_interrupt_flag_get(MCU_RECOVERY_EXTI_LINE)) {
         exti_interrupt_flag_clear(MCU_RECOVERY_EXTI_LINE);
-        //printf("mcu_recovery\r\n");
         mid_sched_event_put((void *)NULL, 0, hal_mcu_recovery_key_it);
     }
 }

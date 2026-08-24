@@ -180,7 +180,7 @@ void hal_can_cmd_send(void *p_event_data, uint16_t event_size)
     if(can_receive_data->rx_ft == CAN_FT_REMOTE) {
         printf(" remote frame len : %d\r\n", can_receive_data->rx_dlen);
     }
-    else if (can_receive_data->rx_ft == CAN_FT_DATA) {
+    else if(can_receive_data->rx_ft == CAN_FT_DATA) {
         printf(" data frame len : %d\r\n", can_receive_data->rx_dlen);
     }
 
