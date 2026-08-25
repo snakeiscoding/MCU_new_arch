@@ -8,6 +8,8 @@
 
 ERP_STATUS erp_status = ENTER_ERP_READY_STATUS;
 static uint16_t erp_startup_delay_ms = 0;
+static uint16_t erp_lcb_ready_delay_ms = 0;
+static bool erp_lcb_woken = false;
 static uint16_t erp_timer = 0;
 static uint8_t start_erp_timer_cnt = 0;
 static bool start_erp_timer = false;
@@ -25,11 +27,20 @@ void mid_erp_status_set(ERP_STATUS status)
     erp_timer = 0;
     start_erp_timer_cnt = 0;
     start_erp_timer = false;
+    erp_lcb_woken = false;
 }
 
+/* How long the LCB needs to boot after its rail returns, before the wake
+ * pulse can reach it. */
 void mid_set_erp_startup_delay_ms(uint16_t delay_ms)
 {
     erp_startup_delay_ms = delay_ms;
+}
+
+/* How long to leave the LCB after the wake pulse before the first command. */
+void mid_set_erp_lcb_ready_delay_ms(uint16_t delay_ms)
+{
+    erp_lcb_ready_delay_ms = delay_ms;
 }
 
 void mid_set_erp_wakeup_led_blink(bool enable)
@@ -66,14 +77,33 @@ void mid_erp_status_handler(void)
     switch(erp_status) {
     case ENTER_ERP_READY_STATUS:
         if(!start_erp_timer) {
-            mid_log_print(LOG_VERBOSE, "LCB init\r\n");
-            mid_lcb_wakeup_init();
+            // mid_log_print(LOG_VERBOSE, "LCB init\r\n");
+            // mid_lcb_wakeup_init();
             start_erp_timer_cnt = 0;
             start_erp_timer = true;
         }
         erp_timer++;
         /*Ensure LCB rail is stable before communication*/
-        if(erp_timer > erp_startup_delay_ms) {
+        // if(erp_timer > erp_startup_delay_ms) {
+        /* Phase 1: wait for the LCB to boot before waking it.
+         *
+         * Leaving ERP cuts the LCB's rail, and it comes back with the wake -
+         * measured back at 12.4V only 19ms in - so the pulse used to be sent
+         * while the LCB was still starting up, and it never arrived. Measured
+         * on the bench across three sleep/wake cycles: a pulse at t=0.4s left
+         * the LCB silent every time, one at t=2.7s woke it every time, and it
+         * then answered the first command within 30ms. */
+        if(!erp_lcb_woken) {
+            if(erp_timer > erp_startup_delay_ms) {
+                mid_log_print(LOG_VERBOSE, "LCB init\r\n");
+                mid_lcb_wakeup_init();
+                erp_lcb_woken = true;
+                erp_timer = 0;
+            }
+            break;
+        }
+        /* Phase 2: settle after the pulse before the first command. */
+        if(erp_timer > erp_lcb_ready_delay_ms) {
             mid_erp_status_set(LCB_WAKE_UP_STATUS);
         }
         break;

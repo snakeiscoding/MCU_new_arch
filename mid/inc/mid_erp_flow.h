@@ -13,6 +13,7 @@ typedef enum {
 } ERP_STATUS;
 
 void mid_set_erp_startup_delay_ms(uint16_t delay_ms);
+void mid_set_erp_lcb_ready_delay_ms(uint16_t delay_ms);
 void mid_set_erp_wakeup_led_blink(bool enable);
 uint8_t mid_erp_status_get(void);
 void mid_erp_status_set(ERP_STATUS status);
