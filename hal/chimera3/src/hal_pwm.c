@@ -29,6 +29,12 @@ void HAL_TIM_PWM_MspInit(TIM_HandleTypeDef *htim)
         GPIO_InitStruct.Pin = GPIO_PWM_PIN_CHANNEL2;
         HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
     }
+    else if(htim->Instance == TIM5) {
+        /* IR carrier on STB_IR (PA1). Clocks only: hal_ir.c switches the pin
+         * between plain output and TIM5 alternate function itself. */
+        __HAL_RCC_TIM5_CLK_ENABLE();
+        __HAL_RCC_GPIOA_CLK_ENABLE();
+    }
 }
 
 void pwm_pd13_init(void)

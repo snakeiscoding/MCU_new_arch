@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include "hal_erp_handler.h"
 #include "hal_gpio.h"
+#include "hal_ir.h"
 #include "hal_stm32f4xx_it.h"
 #include "hal_systick.h"
 #include "mid_fan.h"
@@ -28,14 +29,14 @@ void HardFault_Handler(void)
         
     //memset((uCHAR *)pInfoCtl, 0xff, 0x4000);
     /* Go to infinite loop when Hard Fault exception occurs */
-    printf("Into the HardFault_Handler function.\r\n");
     while(1) {
-        /*pInfoCtl->AppErrorCnt++;
+            /*printf("Into the HardFault_Handler function.\r\n");
+            pInfoCtl->AppErrorCnt++;
             
-        MemoryMoveFromSourToDest((uint32_t)pInfoCtl, INFO_FLASH_PARTITION);
-        MemoryMoveFromSourToDest(INFO_FLASH_PARTITION, INFO_BACK_UP_FLASH_PARTITION);
-        printf("Update the info memory is done.\r\n");*/
-        //while(1);
+            MemoryMoveFromSourToDest((uint32_t)pInfoCtl, INFO_FLASH_PARTITION);
+            MemoryMoveFromSourToDest(INFO_FLASH_PARTITION, INFO_BACK_UP_FLASH_PARTITION);
+            printf("Update the info memory is done.\r\n");*/
+            //while(1);
     }
 }
 
@@ -181,6 +182,9 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
     else if(GPIO_Pin == KEYV_D1_GPIO_PIN || GPIO_Pin == KEYV_D2_GPIO_PIN) {
         hal_erp_wakeup_flag_set();
     }
+    else if(GPIO_Pin == IR_IN_GPIO_PIN) {
+        hal_ir_rx_edge();
+    }
 }
 
 void EXTI9_5_IRQHandler(void)
@@ -190,8 +194,16 @@ void EXTI9_5_IRQHandler(void)
 
 void EXTI15_10_IRQHandler(void)
 {
+    HAL_GPIO_EXTI_IRQHandler(IR_IN_GPIO_PIN);
     HAL_GPIO_EXTI_IRQHandler(KEYV_D1_GPIO_PIN);
     HAL_GPIO_EXTI_IRQHandler(KEYV_D2_GPIO_PIN);
+}
+
+/* IR transmit timebase, see hal_ir.c. */
+extern TIM_HandleTypeDef Tim7Handle;
+void TIM7_IRQHandler(void)
+{
+    HAL_TIM_IRQHandler(&Tim7Handle);
 }
 
 /******************************************************************************/

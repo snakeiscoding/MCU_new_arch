@@ -41,6 +41,7 @@ hal/chimera3/src/hal_erp_handler.c \
 hal/chimera3/src/hal_flash.c \
 hal/chimera3/src/hal_fw_update_cmd_interface.c \
 hal/chimera3/src/hal_gpio.c \
+hal/chimera3/src/hal_ir.c \
 hal/chimera3/src/hal_key_handler.c \
 hal/chimera3/src/hal_lcb_cmd_interface.c \
 hal/chimera3/src/hal_pwm.c \

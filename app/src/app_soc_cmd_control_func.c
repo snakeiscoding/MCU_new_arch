@@ -264,6 +264,9 @@ __attribute__((weak)) uint16_t hal_set_usb_5v_power(uint8_t status) {return 0;}
 __attribute__((weak)) uint16_t hal_set_ext_12v_power(uint8_t status) {return 0;}
 __attribute__((weak)) uint16_t hal_set_rs232_5v_power(uint8_t status) {return 0;}
 __attribute__((weak)) uint16_t hal_set_tv_tuner_5v_power(uint8_t status) {return 0;}
+/* Unlike the stubs above this one keeps answering UNKNOWN_COMMAND, which is
+ * what every target replied for IR 5V before chimera3 implemented it. */
+__attribute__((weak)) uint16_t hal_set_ir_5v_power(uint8_t status) {return CMD_RESULT_CODE_UNKNOWN_COMMAND;}
 void app_soc_cmd_control_power_func(uint8_t target, uint8_t status, uint16_t len)
 {
     mid_log_print(LOG_VERBOSE, "%s\r\n", __FUNCTION__);
@@ -311,6 +314,7 @@ void app_soc_cmd_control_power_func(uint8_t target, uint8_t status, uint16_t len
         result = hal_set_ext_12v_power(status);
         break;
     case IR_5V:
+        result = hal_set_ir_5v_power(status);
         break;
     case TV_TUNER_5V:
         result = hal_set_tv_tuner_5v_power(status);

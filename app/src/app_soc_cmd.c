@@ -167,8 +167,11 @@ void app_soc_cmd_handler(const SOC_CMD *p_soc_cmd)
         break;
     case CMD_TRAMSCEIVER_SET_CEC_RESPONSE:
         break;
-    case CMD_TRAMSCEIVER_SEND_IR_COMMAND:
+    case CMD_TRAMSCEIVER_SEND_IR_COMMAND: {
+        uint8_t *data_ptr = (uint8_t *)p_soc_cmd->cmd_data_buffer;
+        app_soc_cmd_transceiver_ir(data_ptr, p_soc_cmd->cmd_data_len);
         break;
+    }
     case CMD_TRAMSCEIVER_SEND_BUMP_SENSOR_COMMAND: {
         uint8_t *data_ptr = (uint8_t *)p_soc_cmd->cmd_data_buffer;
         app_soc_cmd_transceiver_bump_sensor(data_ptr, p_soc_cmd->cmd_data_len);

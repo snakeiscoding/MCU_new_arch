@@ -1,5 +1,6 @@
 #include "hal_adc.h"
 #include "hal_gpio.h"
+#include "hal_ir.h"
 #include "hal_sysclk.h"
 #include "hal_systick.h"
 #include "hal_uart.h"
@@ -18,6 +19,7 @@ void hal_system_init()
     hal_adc_init();
     hal_uart_init();
     hal_pwm_init();
+    hal_ir_init();
     hal_flash_init();
 
     mid_erp_status_set(ENTER_ERP_READY_STATUS);

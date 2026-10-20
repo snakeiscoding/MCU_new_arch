@@ -72,6 +72,40 @@ AS_INCLUDES = $(PRJ_AS_INCLUDES)
 C_INCLUDES = $(PRJ_C_INCLUDES)
 
 #######################################
+# host platform
+#######################################
+# Windows: GNU Make is launched from native Command Prompt.
+# Linux  : GNU Make uses the default POSIX shell (/bin/sh).
+ifeq ($(OS),Windows_NT)
+    HOST_OS := Windows
+    SHELL := cmd.exe
+    .SHELLFLAGS := /C
+
+    # Convert make-style paths to Windows paths for cmd.exe built-ins.
+    host_path = $(subst /,\,$(1))
+
+    define MKDIR_P
+        if not exist "$(call host_path,$(1))" mkdir "$(call host_path,$(1))"
+    endef
+
+    define RM_RF
+        if exist "$(call host_path,$(1))" rmdir /S /Q "$(call host_path,$(1))"
+    endef
+else
+    HOST_OS := Linux
+
+    host_path = $(1)
+
+    define MKDIR_P
+        mkdir -p "$(1)"
+    endef
+
+    define RM_RF
+        rm -rf "$(1)"
+    endef
+endif
+
+#######################################
 # binaries
 #######################################
 PREFIX = arm-none-eabi-
@@ -123,8 +157,6 @@ LIBS = -lc -lm -lnosys
 LIBDIR = 
 LDFLAGS = $(MCU) -specs=nano.specs -T$(LDSCRIPT) $(LIBDIR) $(LIBS) -Wl,-Map=$(BUILD_DIR)/$(TARGET).map,--cref -Wl,--gc-sections
 
-SHELL := cmd.exe
-.SHELLFLAGS := /c
 # default action: build all
 all: $(BUILD_DIR)/$(TARGET).elf $(BUILD_DIR)/$(TARGET).hex $(BUILD_DIR)/$(TARGET).bin
 
@@ -140,12 +172,12 @@ OBJECTS += $(addprefix $(BUILD_DIR)/,$(notdir $(ASM_SOURCES:.s=.o)))
 vpath %.s $(sort $(dir $(ASM_SOURCES)))
 
 $(BUILD_DIR)/%.o: %.c
-	@if not exist "$(dir $@)" mkdir "$(dir $@)"
-	$(CC) -c $(CFLAGS) -Wa,-a,-ad,-alms=$(BUILD_DIR)/$(notdir $<:.c=.lst) $< -o $@
+	@$(call MKDIR_P,$(@D))
+	$(CC) -c $(CFLAGS) -Wa,-a,-ad,-alms=$(BUILD_DIR)/$(basename $(notdir $<)).lst $< -o $@
 
 $(BUILD_DIR)/%.o: $(ASM_SOURCES)
-	@if not exist "$(dir $@)" mkdir "$(dir $@)"
-	$(AS) -c $(CFLAGS) $< -o $@
+	@$(call MKDIR_P,$(@D))
+	$(AS) -c $(ASFLAGS) $< -o $@
 
 $(BUILD_DIR)/$(TARGET).elf: $(OBJECTS) Makefile
 	$(CC) $(OBJECTS) $(LDFLAGS) -o $@
@@ -158,14 +190,14 @@ $(BUILD_DIR)/%.bin: $(BUILD_DIR)/%.elf | $(BUILD_DIR)
 	$(BIN) $< $@	
 	
 $(BUILD_DIR):
-	mkdir $@		
+	@$(call MKDIR_P,$@)
 
 #######################################
 # clean up
 #######################################
 clean:
-	-rm -fR $(BUILD_DIR)
-  
+	@$(call RM_RF,$(BUILD_DIR)) 
+
 #######################################
 # dependencies
 #######################################

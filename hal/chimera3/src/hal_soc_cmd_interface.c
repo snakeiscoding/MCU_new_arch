@@ -144,6 +144,14 @@ uint16_t hal_set_hr_rate_power(uint8_t status)
     return set_single_pin_power(HR_5V_EN_GPIO, status);
 }
 
+/* IR receiver 5V (PA11). Same single-pin switch as above; the legacy kept it
+ * in PwrFlowCtrl[] with a GPIO_PIN_RESET boot state, so unlike the four above
+ * it starts off. ERP entry turns it on regardless. */
+uint16_t hal_set_ir_5v_power(uint8_t status)
+{
+    return set_single_pin_power(IR_5V_EN_GPIO, status);
+}
+
 /* Qi charging. Two P-FET load switches (Q78/Q79 and Q80/Q81, NCE40P40K back to
  * back) both feed the single QI_POWER net: QI_12W_EN gates +12V_QI at 15W,
  * QI_5W_EN gates +5V_SW at 5W, where +5V_SW is the U94 (MP2329GG) buck off

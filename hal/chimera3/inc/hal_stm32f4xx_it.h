@@ -49,6 +49,7 @@ void EXTI15_10_IRQHandler(void);
 void TIM3_IRQHandler(void);
 void TIM4_IRQHandler(void);
 void TIM5_IRQHandler(void);
+void TIM7_IRQHandler(void);
 void TIM8_CC_IRQHandler(void);
 void TIM1_BRK_TIM9_IRQHandler(void);
 void TIM1_UP_TIM10_IRQHandler(void);
