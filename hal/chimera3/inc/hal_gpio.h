@@ -162,17 +162,6 @@ static inline void gpio_i_clk_en(void) { __HAL_RCC_GPIOI_CLK_ENABLE(); }
 #define VOICE_S4_GPIO_SPEED         GPIO_SPEED_FREQ_VERY_HIGH
 #define VOICE_S4_GPIO_CLK           gpio_e_clk_en
 
-/* IR receiver output (the legacy REMODE_IR_IN), idle high. Both edges, with
- * the same pull-up the legacy used. EXTI line 11 shares EXTI15_10 with the
- * keypad sense lines, which only use it while in STOP mode. */
-#define IR_IN_GPIO_PIN              GPIO_PIN_11
-#define IR_IN_GPIO_PORT             GPIOC
-#define IR_IN_GPIO_MODE             GPIO_MODE_IT_RISING_FALLING
-#define IR_IN_GPIO_PULL             GPIO_PULLUP
-#define IR_IN_GPIO_SPEED            GPIO_SPEED_FREQ_VERY_HIGH
-#define IR_IN_GPIO_EXTI             EXTI15_10_IRQn
-#define IR_IN_GPIO_CLK              gpio_c_clk_en
-
 /* Matrix keypad, 6 drive lines x 2 sense lines = 12 keys.
  *
  * The drive lines idle high; a scan pulls one low at a time and a pressed key
@@ -265,6 +254,17 @@ static inline void gpio_i_clk_en(void) { __HAL_RCC_GPIOI_CLK_ENABLE(); }
 #define FAN_RPM_GPIO_SPEED          GPIO_SPEED_FREQ_VERY_HIGH
 #define FAN_RPM_GPIO_EXTI           EXTI9_5_IRQn
 #define FAN_RPM_GPIO_CLK            gpio_c_clk_en
+
+/* IR receiver output (the legacy REMODE_IR_IN), idle high. Both edges, with
+ * the same pull-up the legacy used. EXTI line 11 shares EXTI15_10 with the
+ * keypad sense lines, which only use it while in STOP mode. */
+#define IR_IN_GPIO_PIN              GPIO_PIN_11
+#define IR_IN_GPIO_PORT             GPIOC
+#define IR_IN_GPIO_MODE             GPIO_MODE_IT_RISING_FALLING
+#define IR_IN_GPIO_PULL             GPIO_PULLUP
+#define IR_IN_GPIO_SPEED            GPIO_SPEED_FREQ_VERY_HIGH
+#define IR_IN_GPIO_EXTI             EXTI15_10_IRQn
+#define IR_IN_GPIO_CLK              gpio_c_clk_en
 
 //GPIO_D OUTPUT
 #define ERP_EN_GPIO_PIN             GPIO_PIN_11

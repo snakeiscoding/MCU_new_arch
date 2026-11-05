@@ -27,7 +27,7 @@ void HardFault_Handler(void)
 {
     //_pINFOCTL pInfoCtl = (_pINFOCTL)SRAM2_ADDR_PARTITION;
         
-    //memset((uCHAR *)pInfoCtl, 0xff, 0x4000);
+        //memset((uCHAR *)pInfoCtl, 0xff, 0x4000);
     /* Go to infinite loop when Hard Fault exception occurs */
     while(1) {
             /*printf("Into the HardFault_Handler function.\r\n");

@@ -103,6 +103,9 @@ static void ir_set_emitter(bool enable_pwm)
 /* Legacy IRTimerReinit(): the next TIM7 update fires period + 1 us from now. */
 static void ir_timer_reinit(uint16_t period)
 {
+    if(period == 0) {
+        period = 1;
+    }
     __HAL_TIM_SET_AUTORELOAD(&Tim7Handle, period);
     __HAL_TIM_SET_COUNTER(&Tim7Handle, 0);
     __HAL_TIM_CLEAR_IT(&Tim7Handle, TIM_IT_UPDATE);
@@ -168,8 +171,6 @@ void HAL_TIM_Base_MspInit(TIM_HandleTypeDef *htim)
  *      only the first header pass comes out right; repeats and data entries
  *      repeat already scaled header values.
  *   3. Data entries stop at 256 table slots, header entries at 512.
- *   4. An entry that scales to 0 loads TIM7 with ARR 0, which never updates,
- *      so the frame never finishes and every later command is refused as busy.
  *
  * Added here: the length check, since the legacy read past the end of a short
  * payload. Everything else, including acking a command dropped as busy with
@@ -289,10 +290,13 @@ void hal_ir_handler_1ms(void)
         return;
     }
 
+    uint32_t primask = __get_PRIMASK();
     __disable_irq();
     edges = ir_rx_edge_count;
     ir_rx_edge_count = 0;
-    __enable_irq();
+    if(!primask) {
+        __enable_irq();
+    }
 
     mid_log_print(LOG_INFO, "IR receiver: %lu edges, line now %s\r\n", (unsigned long)edges,
                   (hal_gpio_get(IR_IN_GPIO) == GPIO_LOW) ? "low" : "high");
@@ -325,7 +329,7 @@ void hal_ir_init(void)
         Error_Handler();
     }
     Tim5OutConfig.OCMode = TIM_OCMODE_PWM1;
-    Tim5OutConfig.Pulse = 5000;
+    Tim5OutConfig.Pulse = 500;
     Tim5OutConfig.OCPolarity = TIM_OCPOLARITY_HIGH;
     Tim5OutConfig.OCFastMode = TIM_OCFAST_DISABLE;
     if(HAL_TIM_PWM_ConfigChannel(&Tim5Handle, &Tim5OutConfig, TIM_CHANNEL_2) != HAL_OK) {

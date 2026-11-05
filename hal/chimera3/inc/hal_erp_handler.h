@@ -14,10 +14,6 @@
  *                                    -> hal_set_erp_power_off()
  *                                    every rail off, then MCU STOP mode
  *
- * Wake is a keypad press: before STOP the drive lines are parked low and the
- * two sense lines are rearmed as falling edge EXTI, so any key connects a low
- * drive line to a sense line and the edge wakes the core. The legacy also woke
- * on an IR receiver (PC11); that input does not exist in this architecture.
  * Before STOP, IR_5V_EN is switched on so the IR receiver stays powered, and
  * the power LED (LED_ONOFF) is lit for the whole of ERP, as in the legacy.
  *
