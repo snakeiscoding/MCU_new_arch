@@ -159,7 +159,13 @@ void hal_set_erp_power_off(void)
     }
     HAL_ResumeTick();
 
+    /* Return the keypad sense lines to plain polled inputs before EXTI15_10
+    * comes back on for the IR line: HAL_GPIO_DeInit() clears their IMR, FTSR
+    * and EXTICR. hal_input_gpio_init() inside hal_system_init() does the same
+    * DeInit for every input; it is spelled out here so the wake path does not
+    * depend on that. */
     HAL_NVIC_DisableIRQ(EXTI15_10_IRQn);
+    HAL_GPIO_DeInit(GPIOE, KEYV_D1_GPIO_PIN | KEYV_D2_GPIO_PIN);
     hal_system_init();
 
     mid_log_print(LOG_INFO, "ERP: woke from STOP mode by %s\r\n", wake_source);

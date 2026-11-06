@@ -270,10 +270,18 @@ SOC_CMD_UPDATE_STATUS hal_fw_update_verify_signature(void)
     return UPDATE_FAIL;
 }
 
-#define PRIVATE_KEY ((uint32_t) 0XFB4C161)
-#define PUBLIC_KEY  ((uint32_t) 0X332818BE)
+/* The packer XORs every byte of the CRC32 with the low byte of each key only,
+ * so that is the protocol: 0xBE, then 0x61 (net 0xDF per byte). Confirmed on
+ * hardware - a packed image sent through the SoC update flow passes Program
+ * State - and ulcgc, vortex2 and vortex_lite2 decode the same way.
+ * Do not widen this to the full 32-bit values below; the packer does not use them,
+ * and every update would fail the CRC32 check.
+ *   PUBLIC_KEY  is the low byte of 0x332818BE
+ *   PRIVATE_KEY is the low byte of 0x0FB4C161 */
+#define PRIVATE_KEY ((uint8_t) 0x61)
+#define PUBLIC_KEY  ((uint8_t) 0xBE)
 
-static void hal_xor_encrypt_decrypt(uint32_t key, uint8_t *data, size_t len)
+static void hal_xor_encrypt_decrypt(uint8_t key, uint8_t *data, size_t len)
 {
     for(size_t i = 0; i < len; i++) {
         data[i] ^= key;
