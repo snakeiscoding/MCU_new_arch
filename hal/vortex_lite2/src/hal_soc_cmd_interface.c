@@ -124,17 +124,23 @@ uint16_t hal_set_erp_status(uint8_t status)
 #define POWER_ENABLE        ((uint8_t)0x01)
 #define POWER_SWITCH        ((uint8_t)0x02)
 
+bool hal_csafe_power_state = true;
+bool hal_qi_12v_power_state = true;
+
 uint16_t hal_set_csafe_power(uint8_t status)
 {
     if(status == POWER_DISABLE) {
+        hal_csafe_power_state = false;
         hal_gpio_set(MCU_CSAFE_PEN_GPIO, GPIO_LOW);
     }
     else if(status == POWER_ENABLE) {
+        hal_csafe_power_state = true;
         hal_gpio_set(MCU_CSAFE_PEN_GPIO, GPIO_HIGH);
     }
     else {
         return CMD_RESULT_CODE_INVALID_PARAMETERS;
     }
+    hal_set_current_monitor(hal_csafe_power_state || hal_qi_12v_power_state);
     return CMD_RESULT_CODE_SUCCESS;
 }
 
@@ -282,9 +288,11 @@ uint16_t hal_set_mcu_watchdog(bool enable)
 uint16_t hal_set_qi_status(uint8_t status)
 {
     if(status == QI_9V) {
+        hal_qi_12v_power_state = false;
         hal_gpio_set(QI_12VPEN_GPIO, GPIO_LOW);
     }
     else if(status == QI_12V) {
+        hal_qi_12v_power_state = true;
         hal_gpio_set(QI_12VPEN_GPIO, GPIO_HIGH);
     }
     else {
@@ -295,6 +303,7 @@ uint16_t hal_set_qi_status(uint8_t status)
     int len = snprintf((char *)data, sizeof(data), "set QI to %d\r\n", status);
     hal_uart_send(UART_ID_6, data, len);
 #endif
+    hal_set_current_monitor(hal_csafe_power_state || hal_qi_12v_power_state);
     return CMD_RESULT_CODE_SUCCESS;
 }
 

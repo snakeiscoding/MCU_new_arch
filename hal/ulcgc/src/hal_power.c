@@ -67,15 +67,15 @@ void hal_set_erp_power_off(void)
         while(hal_gpio_get(ERP_IR_INT_GPIO) == GPIO_LOW) {
             hal_delay_1ms(10);
             press_ms += 10;
-            if (press_ms >= 2000) {
+            if(press_ms >= 2000) {
                 goto WAKEUP_SUCCESS;
             }
         }
-        if (press_ms > 0) {
+        if(press_ms > 0) {
             while(hal_gpio_get(ERP_IR_INT_GPIO) == GPIO_HIGH) {
                 hal_delay_1ms(10);
                 release_ms += 10;
-                if (release_ms >= 100) {
+                if(release_ms >= 100) {
                     press_ms = 0;
                     break;
                 }

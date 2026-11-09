@@ -44,7 +44,7 @@ SOC_CMD_UPDATE_STATUS hal_erase_fw_update_partition(void)
     while(!hal_flash_erase_fw_update_partition()) {
         hal_delay_1ms(1);
         erase_timeout++;
-        if (erase_timeout > 1000) {
+        if(erase_timeout > 1000) {
 			return UPDATE_FAIL;
 		}
     }
@@ -56,8 +56,8 @@ SOC_CMD_UPDATE_STATUS hal_fw_validate_start_addr(uint32_t start_addr, uint32_t l
 {
     if(start_addr < HAL_AP_START_ADDRESS ||
     start_addr >= HAL_AP_END_ADDRESS ||
-    (start_addr + len) <= HAL_AP_START_ADDRESS ||
-    (start_addr + len) >= HAL_AP_END_ADDRESS) {
+    len == 0 ||
+    len > HAL_AP_END_ADDRESS - start_addr) {
         return UPDATE_FAIL;
     }
     return UPDATE_SUCCESS;
@@ -73,7 +73,7 @@ SOC_CMD_UPDATE_STATUS hal_write_fw_update_data(uint32_t start_addr, uint8_t *dat
     while(!hal_flash_write_fw_update_data(start_addr, &data[0], len)) {
         hal_delay_1ms(1);
         write_timeout++;
-        if (write_timeout > 500) {
+        if(write_timeout > 500) {
 			return UPDATE_FAIL;
 		}
     }
@@ -82,9 +82,14 @@ SOC_CMD_UPDATE_STATUS hal_write_fw_update_data(uint32_t start_addr, uint8_t *dat
     return UPDATE_SUCCESS;
 }
 
+/* 
+ * Auto-reboot after update was removed in V1.7.
+ * SoC need to reset MCU via reboot command (0x0006) or re-powering to complete the update.
+ */
 void hal_end_fw_update(void)
 {
     mid_log_print(LOG_INFO, "End of firmware update\r\n");
+    hal_delay_1ms(2);
 }
 
 #define CRC16_CMD_LEN ((uint8_t)10)
@@ -94,7 +99,7 @@ static uint16_t crc16_reflect(uint16_t data, uint8_t bits)
     uint8_t bit;
     uint32_t reflection = 0x00000000;
     for(bit = 0; bit < bits; bit++) {
-        if ((data & 0x01) != 0) {
+        if((data & 0x01) != 0) {
             reflection |= (uint32_t)(1 << ((bits - 1) - bit));
         }
         data = (uint16_t)(data >> 1);
@@ -132,10 +137,10 @@ uint16_t hal_fw_update_get_crc16_checksum(uint8_t *data, uint16_t len, uint8_t r
             j >>= 1;
         }
     }
-    if (reflectOut != 0) {
+    if(reflectOut != 0) {
         crc16 = (uint16_t)((crc16_reflect((uint16_t)crc16, 16) ^ xorOut) & mask);
     }
-		
+
 	return crc16;
 }
 
@@ -193,7 +198,7 @@ static void hal_crc32_table_gen(uint32_t table[256])
     for(uint32_t i = 0; i < 256; i++) {
         uint32_t crc32 = i;
         for(int j = 0; j < 8; j++) {
-            if (crc32 & 1) {
+            if(crc32 & 1) {
                 crc32 = (crc32 >> 1) ^ CRC32_POLYNOMIAL;
             }
             else {
@@ -212,7 +217,7 @@ void hal_crc32_table_reset(void)
 
 static void hal_crc32_calculate(uint8_t *data, uint16_t len)
 {
-    for (size_t i = 0; i < len; i++) {
+    for(size_t i = 0; i < len; i++) {
         crc32_checksum = (crc32_checksum >> 8) ^ crc32_table[(crc32_checksum & 0xFF) ^ data[i]];
     }
 }

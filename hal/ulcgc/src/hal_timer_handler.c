@@ -57,20 +57,20 @@ void hal_set_current_monitor(bool enable)
 
 void hal_current_monitor_handler(void)
 {
-    if (!current_monitor_enabled) {
+    if(!current_monitor_enabled) {
         return;
     }
     
     current_timer++;
-    if (current_timer % 10 == 0) {
+    if(current_timer % 10 == 0) {
         hal_MCB12V_current_sample();
     }
 
     switch(curr_state) {
     case CURR_MON_IDLE:
-        if (current_timer >= 5000) {
+        if(current_timer >= 5000) {
             current_timer = 0;
-            if (mcb12v_overcurrent()) {
+            if(mcb12v_overcurrent()) {
                 hal_gpio_set(QI_9VPEN_GPIO, GPIO_LOW);
                 hal_gpio_set(QI_12VPEN_GPIO, GPIO_LOW);
                 curr_state = CURR_MON_STAGE1;
@@ -78,9 +78,9 @@ void hal_current_monitor_handler(void)
         }
         break;
     case CURR_MON_STAGE1:
-        if (current_timer >= 100) {
+        if(current_timer >= 150) {
             current_timer = 0;
-            if (mcb12v_overcurrent()) {
+            if(mcb12v_overcurrent()) {
                 hal_gpio_set(CAN_12V_EN_GPIO, GPIO_LOW);
                 curr_state = CURR_MON_STAGE2;
             }
@@ -90,9 +90,9 @@ void hal_current_monitor_handler(void)
         }
         break;
     case CURR_MON_STAGE2:
-        if (current_timer >= 100) {
+        if(current_timer >= 150) {
             current_timer = 0;
-            if (mcb12v_overcurrent()) {
+            if(mcb12v_overcurrent()) {
                 hal_gpio_set(MCU_CSAFE_PEN_GPIO, GPIO_LOW);
                 current_monitor_enabled = false;
             }

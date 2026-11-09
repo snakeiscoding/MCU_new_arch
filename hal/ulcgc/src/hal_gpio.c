@@ -2,6 +2,7 @@
 #include "gd32f5xx.h"
 #include "app_soc_cmd_control_func.h"
 #include "app_soc_cmd.h"
+#include "hal_adc.h"
 #include "hal_gpio.h"
 
 typedef struct {
@@ -74,6 +75,10 @@ void hal_output_gpio_default_state_set(void)
     hal_gpio_set(MCU_ERP_PEN_GPIO, GPIO_HIGH);
     hal_gpio_set(ERP_WHITE_GPIO, GPIO_HIGH);
 
+    if(hal_read_hw_id() == hw_k2) {
+        hal_gpio_set(MCU_SOC485_TXEN_GPIO, GPIO_HIGH);
+    }
+
     hal_gpio_set(EXT_12V6_EN_GPIO, GPIO_LOW);
     hal_gpio_set(SOC_5VS5_PEN_GPIO, GPIO_HIGH);
 
@@ -142,6 +147,10 @@ void hal_gpio_module_deinit(void)
     hal_gpio_set(ERP_GREEN_GPIO, GPIO_HIGH);
     hal_gpio_set(ERP_WHITE_GPIO, GPIO_LOW);
     hal_input_gpio_init(ERP_IR_INT_GPIO);
+
+    if(hal_read_hw_id() == hw_k2) {
+        hal_gpio_set(MCU_SOC485_TXEN_GPIO, GPIO_LOW);
+    }
 
     hal_gpio_set(EXIT_PW_EN_GPIO, GPIO_LOW);
     hal_gpio_set(EXT_12V6_EN_GPIO, GPIO_LOW);

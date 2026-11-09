@@ -37,16 +37,12 @@ void hal_can_config(uint16_t baudrate_value)
 
     /* baudrate 1Mbps, sample piont at 80% */
     can_parameter.resync_jump_width = CAN_BT_SJW_1TQ;
-    can_parameter.time_segment_1 = CAN_BT_BS1_3TQ;
+    can_parameter.time_segment_1 = CAN_BT_BS1_7TQ;
     can_parameter.time_segment_2 = CAN_BT_BS2_2TQ;
-    can_parameter.prescaler = 7;
 
     switch(baudrate_value) {
     case 1000:
-        can_parameter.prescaler = 7;
-        can_parameter.resync_jump_width = CAN_BT_SJW_1TQ;
-        can_parameter.time_segment_1 = CAN_BT_BS1_3TQ;
-        can_parameter.time_segment_2 = CAN_BT_BS2_2TQ;
+        can_parameter.prescaler = 5;
         break;
     case 500:
         can_parameter.prescaler = 10;
@@ -102,9 +98,11 @@ void hal_can_config(uint16_t baudrate_value)
     /* FD mode data baudrate 2Mbps, sample piont at 80% */
     can_fd_parameter.data_resync_jump_width = CAN_BT_SJW_1TQ;
     can_fd_parameter.data_time_segment_1 = CAN_BT_BS1_3TQ;
-    can_fd_parameter.data_time_segment_2 = CAN_BT_BS2_2TQ;
-    /* CAN-FD data segement prescaler should be the same as non-data segement prescaler */
-    can_fd_parameter.data_prescaler = 7;
+    can_fd_parameter.data_time_segment_2 = CAN_BT_BS2_1TQ;
+    /* CAN-FD data segment prescaler is an independent register (CAN_DBT),
+     * not coupled to the nominal-phase prescaler !X intentionally fixed
+     * here, not per-case. */
+    can_fd_parameter.data_prescaler = 5;
     can_fd_init(CAN1, &can_fd_parameter);
 
     can_interrupt_enable(CAN1, CAN_INT_RFNE0);
@@ -180,7 +178,7 @@ void hal_can_cmd_send(void *p_event_data, uint16_t event_size)
     if(can_receive_data->rx_ft == CAN_FT_REMOTE) {
         printf(" remote frame len : %d\r\n", can_receive_data->rx_dlen);
     }
-    else if (can_receive_data->rx_ft == CAN_FT_DATA) {
+    else if(can_receive_data->rx_ft == CAN_FT_DATA) {
         printf(" data frame len : %d\r\n", can_receive_data->rx_dlen);
     }
 

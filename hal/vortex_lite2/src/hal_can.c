@@ -37,14 +37,12 @@ void hal_can_config(uint16_t baudrate_value)
 
     /* baudrate 1Mbps, sample piont at 80% */
     can_parameter.resync_jump_width = CAN_BT_SJW_1TQ;
-    can_parameter.time_segment_1 = CAN_BT_BS1_3TQ;
+    can_parameter.time_segment_1 = CAN_BT_BS1_7TQ;
     can_parameter.time_segment_2 = CAN_BT_BS2_2TQ;
-    can_parameter.prescaler = 7;
 
     switch(baudrate_value) {
     case 1000:
         can_parameter.prescaler = 7;
-        can_parameter.resync_jump_width = CAN_BT_SJW_1TQ;
         can_parameter.time_segment_1 = CAN_BT_BS1_3TQ;
         can_parameter.time_segment_2 = CAN_BT_BS2_2TQ;
         break;
@@ -180,7 +178,7 @@ void hal_can_cmd_send(void *p_event_data, uint16_t event_size)
     if(can_receive_data->rx_ft == CAN_FT_REMOTE) {
         printf(" remote frame len : %d\r\n", can_receive_data->rx_dlen);
     }
-    else if (can_receive_data->rx_ft == CAN_FT_DATA) {
+    else if(can_receive_data->rx_ft == CAN_FT_DATA) {
         printf(" data frame len : %d\r\n", can_receive_data->rx_dlen);
     }
 

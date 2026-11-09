@@ -47,7 +47,7 @@ typedef enum {
     TV_5V_EN_GPIO,              // PD13
     TV_3V3_EN_GPIO,             // PD7
     MCU_HR_PEN_GPIO,            // PC9
-    MCU_USB30_PWREN_GPIO,       // PD3    
+    MCU_USB30_PWREN_GPIO,       // PD3
     SDMMC0_PWREN_H_GPIO,        // PD12
     RS232_PEN_GPIO,             // PA8
     RED_CON_GPIO,               // PA11

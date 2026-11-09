@@ -40,37 +40,44 @@ bool mcb12v_overcurrent(void)
     return ((float)hal_get_MCB12V_current_sample() > 4.5f);
 }
 
-typedef enum {
-    CURR_MON_IDLE = 0,
-    CURR_MON_STAGE1,
-    CURR_MON_STAGE2,
-} CURR_MON_STATE;
-static CURR_MON_STATE curr_state = CURR_MON_IDLE;
+CURR_MON_STATE curr_state = CURR_MON_IDLE;
 uint32_t current_timer = 0;
-uint32_t stage_wait_timer = 0;
+bool current_monitor_enabled = true;
+
+void hal_set_current_monitor(bool enable)
+{
+    if(current_monitor_enabled != enable) {
+        current_monitor_enabled = enable;
+        curr_state = CURR_MON_IDLE;
+        current_timer = 0;
+    }
+}
+
 void hal_current_monitor_handler(void)
 {
-    if (current_timer % 10 == 0) {
+    if(!current_monitor_enabled) {
+        return;
+    }
+    
+    current_timer++;
+    if(current_timer % 10 == 0) {
         hal_MCB12V_current_sample();
     }
 
     switch(curr_state) {
     case CURR_MON_IDLE:
-        current_timer++;
-        if (current_timer >= 5000) {
+        if(current_timer >= 5000) {
             current_timer = 0;
-            if (mcb12v_overcurrent()) {
+            if(mcb12v_overcurrent()) {
                 hal_gpio_set(QI_12VPEN_GPIO, GPIO_LOW);
                 curr_state = CURR_MON_STAGE1;
-                stage_wait_timer = 0;
             }
         }
         break;
     case CURR_MON_STAGE1:
-        stage_wait_timer++;
-        if (stage_wait_timer >= 100) {
-            stage_wait_timer = 0;
-            if (mcb12v_overcurrent()) {
+        if(current_timer >= 150) {
+            current_timer = 0;
+            if(mcb12v_overcurrent()) {
                 hal_gpio_set(CAN_12V_EN_GPIO, GPIO_LOW);
                 curr_state = CURR_MON_STAGE2;
             }
@@ -80,11 +87,11 @@ void hal_current_monitor_handler(void)
         }
         break;
     case CURR_MON_STAGE2:
-        stage_wait_timer++;
-        if (stage_wait_timer >= 100) {
-            stage_wait_timer = 0;
-            if (mcb12v_overcurrent()) {
+        if(current_timer >= 150) {
+            current_timer = 0;
+            if(mcb12v_overcurrent()) {
                 hal_gpio_set(MCU_CSAFE_PEN_GPIO, GPIO_LOW);
+                current_monitor_enabled = false;
             }
             curr_state = CURR_MON_IDLE;
         }

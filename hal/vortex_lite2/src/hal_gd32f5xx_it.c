@@ -61,7 +61,6 @@ OF SUCH DAMAGE.
 #include "user_app.h"
 #include "drv_led.h"*/
 
-
 extern volatile uint64_t time_1ms;
 extern usb_core_driver cdc_acm;
 
@@ -74,6 +73,7 @@ static void resume_mcu_clk(void);
 #define SINGLE_ECC_ERROR_HANDLE(s)   do{}while(1)
 
 // #define UART_LOOPBACK_DEBUG
+#define IRQ_DEBUG
 
 /*!
     \brief      this function handles NMI exception
@@ -253,7 +253,7 @@ void USART0_IRQHandler(void)
         uint16_t rx_count = 1024 - (dma_transfer_number_get(DMA1, DMA_CH2));
 #ifdef UART_LOOPBACK_DEBUG
         printf("usart0 rx : ");
-        for (int i = 0;i < rx_count; i++) {
+        for(int i = 0;i < rx_count; i++) {
             printf("0x%02X ", usart0_rxbuffer[i]);
         }
         printf("\r\n");
@@ -280,7 +280,7 @@ void USART1_IRQHandler(void)
         uint8_t rx_count =256 - (dma_transfer_number_get(DMA0, DMA_CH5));
 #ifdef UART_LOOPBACK_DEBUG
         printf("usart1 rx : ");
-        for (int i = 0;i < rx_count; i++) {
+        for(int i = 0;i < rx_count; i++) {
             printf("0x%02X ", usart1_rxbuffer[i]);
         }
         printf("\r\n");
@@ -307,15 +307,15 @@ void UART3_IRQHandler(void)
         uart3_rx_count = 256 - (dma_transfer_number_get(DMA0, DMA_CH2));
 #ifdef UART_LOOPBACK_DEBUG
         printf("uart3 rx : ");
-        for (int i = 0;i < uart3_rx_count; i++) {
+        for(int i = 0;i < uart3_rx_count; i++) {
             printf("0x%02X ", uart3_rxbuffer[i]);
         }
         printf("\r\n");
 #endif
         mid_sched_event_put((void *)uart3_rxbuffer, uart3_rx_count, mid_lcb_cmd_receive);
         mid_set_soc_lcb_comm_timer();
-        /*if (user_get_rs485_mode() == 0) {
-            if (get_dfu_mode() == 0) {
+        /*if(user_get_rs485_mode() == 0) {
+            if(get_dfu_mode() == 0) {
                 app_sched_event_put((void *)uart3_rxbuffer, uart3_rx_count, sch_rs485_rx_handle);
             }      
         }*/
@@ -339,7 +339,7 @@ void UART6_IRQHandler(void)
 #ifdef UART_LOOPBACK_DEBUG
         uint16_t rx_count = 64 - (dma_transfer_number_get(DMA0, DMA_CH3));
         printf("uart6 rx : ");
-        for (int i = 0;i < rx_count; i++) {
+        for(int i = 0;i < rx_count; i++) {
             printf("0x%02X ", uart6_rxbuffer[i]);
         }
         printf("\r\n");
@@ -500,8 +500,10 @@ void EXTI0_IRQHandler(void)
 {
     if(RESET != exti_interrupt_flag_get(MCU_SW_POSITION_EXTI_LINE)) {
         exti_interrupt_flag_clear(MCU_SW_POSITION_EXTI_LINE);
-        /*uint8_t key_state = hal_gpio_get(MCU_SW_POSITION_GPIO);
-        printf("e-stop: %d\r\n", key_state);*/
+#ifdef IRQ_DEBUG
+        uint8_t key_state = hal_gpio_get(MCU_SW_POSITION_GPIO);
+        mid_log_print(LOG_VERBOSE, "E-stop: %d\r\n", key_state);
+#endif
         app_soc_cmd_event_estop_func();
     }
 }
@@ -522,12 +524,16 @@ void EXTI5_9_IRQHandler(void)
 {
     if(RESET != exti_interrupt_flag_get(FAN_RPM_EXTI_LINE)) {
         exti_interrupt_flag_clear(FAN_RPM_EXTI_LINE);
-        // mid_log_print(LOG_VERBOSE, "Fan rpm\r\n");
+#ifdef IRQ_DEBUG
+        mid_log_print(LOG_VERBOSE, "Fan rpm\r\n");
+#endif
         mid_calcu_fan_rpm();
     }
     if(RESET != exti_interrupt_flag_get(ERP_IR_INT_EXTI_LINE)) {
         exti_interrupt_flag_clear(ERP_IR_INT_EXTI_LINE);
+#ifdef IRQ_DEBUG
         mid_log_print(LOG_VERBOSE, "IR trigger\r\n");
+#endif
     }
 }
 
@@ -535,7 +541,9 @@ void EXTI10_15_IRQHandler(void)
 {
     if(RESET != exti_interrupt_flag_get(SOC_RESET_EXTI_LINE)) {
         exti_interrupt_flag_clear(SOC_RESET_EXTI_LINE);
+#ifdef IRQ_DEBUG
         mid_log_print(LOG_VERBOSE, "SOC reset\r\n");
+#endif
     }
     if(RESET != exti_interrupt_flag_get(MCU_KEY_INT_EXTI_LINE)) {
         exti_interrupt_flag_clear(MCU_KEY_INT_EXTI_LINE);
@@ -543,4 +551,3 @@ void EXTI10_15_IRQHandler(void)
         mid_sched_event_put((void *)NULL, 0, hal_keypad_it);
     }
 }
-    

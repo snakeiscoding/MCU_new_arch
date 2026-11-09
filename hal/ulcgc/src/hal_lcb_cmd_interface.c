@@ -1,5 +1,6 @@
 #include <stdbool.h>
 #include <string.h>
+#include "hal_adc.h"
 #include "hal_gpio.h"
 #include "hal_lcb_cmd_interface.h"
 #include "hal_power.h"
@@ -8,7 +9,6 @@
 #include "mid_comm_monitor_led.h"
 #include "mid_erp_flow.h"
 #include "mid_lcb_cmd.h"
-
 
 void hal_lcb_leave_erp_success_handler(void)
 {
@@ -60,7 +60,9 @@ void hal_lcb_tx_pin_mode_switch(bool gpio_mode)
 
 void hal_lcb_wakeup_init(void)
 {
-    hal_gpio_set(MCU_SOC485_TXEN_GPIO, GPIO_LOW);
+    if(hal_read_hw_id() == hw_k2) {
+        hal_gpio_set(MCU_SOC485_TXEN_GPIO, GPIO_LOW);
+    }
     hal_lcb_tx_pin_mode_switch(true);
     hal_delay_1ms(1);
     hal_gpio_set(MCU_UART3_RTS_GPIO, GPIO_HIGH);
@@ -72,20 +74,26 @@ void hal_lcb_wakeup_init(void)
     hal_gpio_set(MCU_UART3_RTS_GPIO, GPIO_LOW);
     hal_lcb_tx_pin_mode_switch(false);
     hal_delay_1ms(1);
-    hal_gpio_set(MCU_SOC485_TXEN_GPIO, GPIO_HIGH);
+    if(hal_read_hw_id() == hw_k2) {
+        hal_gpio_set(MCU_SOC485_TXEN_GPIO, GPIO_HIGH);
+    }
 }
 
 void hal_lcb_rs485_ctrl_tx(bool enable)
 {
     if(enable) {
-        hal_gpio_set(MCU_SOC485_TXEN_GPIO, GPIO_LOW);
-        hal_delay_1ms(1);
+        if(hal_read_hw_id() == hw_k2) {
+            hal_gpio_set(MCU_SOC485_TXEN_GPIO, GPIO_LOW);
+            hal_delay_1ms(1);
+        }
         hal_gpio_set(MCU_UART3_RTS_GPIO, GPIO_HIGH);
     }
     else {
         hal_gpio_set(MCU_UART3_RTS_GPIO, GPIO_LOW);
-        hal_delay_1ms(1);
-        hal_gpio_set(MCU_SOC485_TXEN_GPIO, GPIO_HIGH);
+        if(hal_read_hw_id() == hw_k2) {
+            hal_delay_1ms(1);
+            hal_gpio_set(MCU_SOC485_TXEN_GPIO, GPIO_HIGH);
+        }
     }
 }
 

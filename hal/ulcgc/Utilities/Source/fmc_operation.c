@@ -145,7 +145,7 @@ uint32_t sector_name_to_number(uint32_t sector_name)
 void fmc_erase_sector_by_address(uint32_t address)
 {
     fmc_sector_info_struct sector_info;
-//     printf("\r\nFMC erase operation:\r\n");
+    // printf("\r\nFMC erase operation:\r\n");
     /* get information about the sector in which the specified address is located */
     sector_info = fmc_sector_info_get(address);
     if(FMC_WRONG_SECTOR_NAME == sector_info.sector_name) {
@@ -183,6 +183,8 @@ void fmc_erase_sector_by_address(uint32_t address)
 */
 void fmc_write_64bit_data(uint32_t address, uint16_t length, uint64_t *data_64)
 {
+    if(length == 0) return;
+
     fmc_sector_info_struct start_sector_info;
     fmc_sector_info_struct end_sector_info;
     uint32_t sector_num, i;
@@ -249,6 +251,8 @@ void fmc_read_64bit_data(uint32_t address, uint16_t length, uint64_t *data_64)
 */
 void fmc_write_32bit_data(uint32_t address, uint16_t length, uint32_t *data_32)
 {
+    if(length == 0) return;
+
     fmc_sector_info_struct start_sector_info;
     fmc_sector_info_struct end_sector_info;
     uint32_t sector_num, i;
@@ -315,6 +319,8 @@ void fmc_read_32bit_data(uint32_t address, uint16_t length, uint32_t *data_32)
 */
 void fmc_write_16bit_data(uint32_t address, uint16_t length, uint16_t *data_16)
 {
+    if(length == 0) return;
+
     fmc_sector_info_struct start_sector_info;
     fmc_sector_info_struct end_sector_info;
     uint32_t sector_num, i;
@@ -381,6 +387,8 @@ void fmc_read_16bit_data(uint32_t address, uint16_t length, uint16_t *data_16)
 */
 void fmc_write_8bit_data(uint32_t address, uint16_t length, uint8_t *data_8)
 {
+    if(length == 0) return;
+
     fmc_sector_info_struct start_sector_info;
     fmc_sector_info_struct end_sector_info;
     uint32_t sector_num, i;

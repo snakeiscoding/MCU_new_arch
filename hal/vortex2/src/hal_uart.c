@@ -436,7 +436,7 @@ static void hal_uart4_send(uint8_t *data, uint16_t len)
 
 static void hal_uart6_send(uint8_t *data, uint16_t len)
 {
-    for (int i = 0; i < len; i++) {
+    for(int i = 0; i < len; i++) {
         usart_data_transmit(UART6, data[i]);
         while (RESET == usart_flag_get(UART6, USART_FLAG_TBE));          
     }

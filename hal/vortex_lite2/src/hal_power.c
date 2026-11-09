@@ -55,14 +55,25 @@ void hal_set_erp_power_off(void)
     hal_set_power_mode(POWER_MODE_ERP);
     erp_wakeup_flag = false;
     uint16_t press_ms = 0;
+    uint16_t release_ms = 0;
     while(!erp_wakeup_flag) {
         hal_set_erp_sleep();
-        press_ms = 0;
+        release_ms = 0;
         while(hal_gpio_get(ERP_IR_INT_GPIO) == GPIO_LOW) {
             hal_delay_1ms(10);
             press_ms += 10;
-            if (press_ms >= 2000) {
+            if(press_ms >= 2000) {
                 goto WAKEUP_SUCCESS;
+            }
+        }
+        if(press_ms > 0) {
+            while(hal_gpio_get(ERP_IR_INT_GPIO) == GPIO_HIGH) {
+                hal_delay_1ms(10);
+                release_ms += 10;
+                if(release_ms >= 100) {
+                    press_ms = 0;
+                    break;
+                }
             }
         }
     }

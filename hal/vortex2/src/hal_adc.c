@@ -74,7 +74,7 @@ void hal_hw_voltage_adc_init(void)
         hw_id = hw_k1;
         // log_print(LOG_VERBOSE,"Found JHT K1\r\n");
     }
-    else if ((hal_read_hw_voltage_adc() >= 2.10)&&(hal_read_hw_voltage_adc() <= 2.20)) {
+    else if((hal_read_hw_voltage_adc() >= 2.10)&&(hal_read_hw_voltage_adc() <= 2.20)) {
         hw_id = hw_kL;
         // log_print(LOG_VERBOSE,"Found JHT K1\r\n");
     }

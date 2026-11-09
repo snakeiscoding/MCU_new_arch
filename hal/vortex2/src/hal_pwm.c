@@ -49,7 +49,7 @@ void pwm_pa7_init(void)
 
 void pwm_pa7_deinit(void)
 {
-    timer_deinit(TIMER2);    
+    timer_deinit(TIMER2);
 }
 
 uint32_t rgb_led_pwm_buf[256];

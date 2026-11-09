@@ -28,6 +28,7 @@ uint16_t hal_set_tv_tuner_5v_power(uint8_t status);
 
 uint16_t hal_set_mcu_watchdog(bool enable);
 
+uint8_t hal_get_qi_status(void);
 uint16_t hal_set_qi_status(uint8_t status);
 
 uint16_t hal_set_led_behavior(uint8_t status);
