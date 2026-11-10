@@ -3,6 +3,7 @@
 #include "hal_ir.h"
 #include "hal_key_handler.h"
 #include "hal_soc_cmd_interface.h"
+#include "hal_soc_rx.h"
 #include "hal_timer_handler.h"
 #include "mid_erp_flow.h"
 #include "mid_log.h"
@@ -22,9 +23,10 @@
 
 static uint64_t reboot_process_last_time = 0;
 
-/* Buzzer release. The legacy held the tone with a blocking HAL_Delay(20)
- * inside BuzzerTrigerPrecess(); doing that here would stall the scheduler for
- * 20ms on every beep, so the pulse is timed off this 1ms tick instead. 
+/* Buzzer release. The legacy v0.15 held the tone with a blocking HAL_Delay(20)
+ * inside BuzzerTrigerPrecess(); doing that here would stall the scheduler on
+ * every beep, so the pulse is timed off this 1ms tick instead, as v0.18's
+ * BuzzerCtrlProcess() now does too.
  *
  * The elapsed time is measured against time_1ms rather than by counting how
  * often this handler runs. Counting invocations does not measure milliseconds:
@@ -33,7 +35,7 @@ static uint64_t reboot_process_last_time = 0;
  * drains that backlog back to back. A 20-invocation count can therefore elapse
  * in a handful of real milliseconds - far too short for the buzzer to trigger,
  * which is exactly how this failed the first time. */
-#define TONE_ON_TIME_MS ((uint64_t)20)
+#define TONE_ON_TIME_MS ((uint64_t)25)
 
 extern volatile uint64_t time_1ms;
 
@@ -41,7 +43,7 @@ static bool tone_on_running = false;
 static uint64_t tone_on_start_time = 0;
 
 /* Re-arming on a fresh trigger (rather than ignoring it while a tone is still
- * playing) means every accepted tone gets its full 20ms, which is what the
+ * playing) means every accepted tone gets its full pulse, which is what the
  * legacy's blocking delay gave. */
 void hal_set_tone_start_timer(void)
 {
@@ -90,7 +92,9 @@ void hal_1ms_tick_handler(void *p_event_data, uint16_t event_size)
     hal_key_handler_1ms();
 
     hal_ir_handler_1ms();
-    
+
+    hal_soc_rx_process();
+
     if((time_1ms - reboot_process_last_time) >= REBOOT_PROCESS_PERIOD_MS) {
         reboot_process_last_time = time_1ms;
         hal_reboot_process();

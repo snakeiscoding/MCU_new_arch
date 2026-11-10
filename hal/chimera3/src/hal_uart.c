@@ -1,4 +1,5 @@
 #include "hal_adc.h"
+#include "hal_soc_rx.h"
 #include "hal_uart.h"
 #include "hal_stm32f4xx_it.h"
 #include "stm32f4xx.h"
@@ -83,7 +84,6 @@ void HAL_UART_MspInit(UART_HandleTypeDef *huart)
 		HAL_NVIC_SetPriority(USART1_IRQn, 0, 1);
 		HAL_NVIC_EnableIRQ(USART1_IRQn);
         __HAL_UART_ENABLE_IT(&Uart1Handle, UART_IT_RXNE);
-        __HAL_UART_ENABLE_IT(&Uart1Handle, UART_IT_IDLE);
 	}
 
     if(huart->Instance == USART2)
@@ -149,6 +149,10 @@ void HAL_UART_MspInit(UART_HandleTypeDef *huart)
 
 void usart1_init(void)
 {
+    /* Boot and ERP wake both come through here: start the SoC receive path
+     * empty, as the legacy v0.18 SoCUartGpioStart() did. */
+    hal_soc_rx_reset();
+
     Uart1Handle.Instance          = USART1;
     Uart1Handle.Init.BaudRate     = 115200;
     Uart1Handle.Init.WordLength   = UART_WORDLENGTH_8B;

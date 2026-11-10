@@ -2,6 +2,7 @@
 #include "hal_erp_handler.h"
 #include "hal_gpio.h"
 #include "hal_ir.h"
+#include "hal_soc_rx.h"
 #include "hal_stm32f4xx_it.h"
 #include "hal_systick.h"
 #include "mid_fan.h"
@@ -108,23 +109,12 @@ void PendSV_Handler(void)
 
 extern UART_HandleTypeDef Uart1Handle, Uart2Handle, Uart3Handle;
 
-uint8_t usart1_rxbuffer[1024];
-volatile uint16_t usart1_rx_count = 0;
+/* SoC link. Bytes are framed one at a time in hal_soc_rx.c, so frames no
+ * longer depend on the line going idle between them. */
 void USART1_IRQHandler(void)
 {
     if(__HAL_UART_GET_FLAG(&Uart1Handle, UART_FLAG_RXNE) != RESET) {
-        usart1_rxbuffer[usart1_rx_count] = (uint8_t)(Uart1Handle.Instance->DR & 0x00FF);
-        usart1_rx_count++;
-    }
-
-    if(__HAL_UART_GET_FLAG(&Uart1Handle, UART_FLAG_IDLE) != RESET) {
-        __HAL_UART_CLEAR_IDLEFLAG(&Uart1Handle);
-        /*for (int i = 0;i < usart1_rx_count;i ++) {
-            printf("%02X ", usart1_rxbuffer[i]);
-        }
-        printf("\r\n");*/
-        mid_sched_event_put((void *)usart1_rxbuffer, usart1_rx_count, mid_soc_cmd_receive);
-        usart1_rx_count = 0; 
+        hal_soc_rx_byte((uint8_t)(Uart1Handle.Instance->DR & 0x00FF));    
     }
 
     HAL_UART_IRQHandler(&Uart1Handle);

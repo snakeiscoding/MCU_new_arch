@@ -46,6 +46,7 @@ hal/chimera3/src/hal_key_handler.c \
 hal/chimera3/src/hal_lcb_cmd_interface.c \
 hal/chimera3/src/hal_pwm.c \
 hal/chimera3/src/hal_soc_cmd_interface.c \
+hal/chimera3/src/hal_soc_rx.c \
 hal/chimera3/src/hal_stm32f4xx_it.c \
 hal/chimera3/src/hal_syscalls.c \
 hal/chimera3/src/hal_sysclk.c \

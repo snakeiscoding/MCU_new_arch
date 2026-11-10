@@ -21,9 +21,9 @@
  *   keypad - the drive lines are parked low and the two sense lines rearmed as
  *            falling edge EXTI, so any key connects a low drive line to a
  *            sense line and the edge wakes the core.
- *   IR     - PC11 (REMODE_IR_IN), legacy rules: wake if the line is already
- *            low when STOP is entered, or once it has stayed low for 2s after
- *            an edge; anything shorter goes straight back to STOP.
+ *   IR     - PC11 (REMODE_IR_IN), v0.18 rule: an edge, or the line
+ *            already low at STOP entry, starts a check; after 2s the line must
+ *            read low within a 200ms window, otherwise back to STOP.
  *
  * Known limit, same as the legacy: the IWDG cannot be stopped, so if the SoC
  * enabled the MCU watchdog (0x0007) before entering ERP, it expires ~8.2s into

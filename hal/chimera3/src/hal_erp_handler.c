@@ -1,4 +1,5 @@
 #include <stdbool.h>
+#include "app_soc_cmd_control_func.h"
 #include "hal_erp_handler.h"
 #include "hal_gpio.h"
 #include "hal_ir.h"
@@ -82,25 +83,37 @@ static void hal_erp_ir_power_on(void)
     hal_gpio_set(LED_ONOFF_GPIO, GPIO_HIGH);
 }
 
-/* The legacy IR wake rule. Its EXTI callbacks stamped the falling edge and,
- * on the rising edge, left ERP only if the line had been low for 2000ms,
- * otherwise put the MCU straight back to sleep; ErpLedProcess() also left ERP
- * once the line had stayed low for 2000ms without a rising edge.
- *
- * Measuring 2s needs a running tick, and STOP exits on the 16MHz HSI with the
- * tick suspended, so the PLL is brought back first. If the line goes high
- * early the tick is suspended again and the caller re-enters STOP; the clock
- * tree can stay as it is, STOP stops the PLL anyway. */
-#define ERP_IR_WAKEUP_HOLD_MS   ((uint64_t)2000)
+/* The legacy v0.18 IR wake rule (DirButton.c IRWakeConfirmBlocking()). An IR
+ * edge during STOP, or the line already low when STOP would be entered, only
+ * starts a check: wait 2000ms, then wake if the line reads low at any point in
+ * the next 200ms, otherwise go back to STOP. In use that means keeping the
+ * sensor covered for about 2s. (v0.15, which this file first followed, wanted
+ * the line low without a break for the whole 2s and woke at once if it was low
+ * at STOP entry.)
+ * The timing needs a running tick, and STOP exits on the 16MHz HSI with the
+ * tick suspended, so the PLL is brought back first. On a failed check the tick
+ * is suspended again and the caller re-enters STOP; the clock tree can stay as
+ * it is, STOP stops the PLL anyway. As in v0.18 the MCU watchdog is fed during
+ * the 2s wait, so an enabled IWDG cannot expire inside the check itself; it
+ * still cannot be fed while in STOP. */
+#define ERP_IR_WAKEUP_CONFIRM_DELAY_MS  ((uint64_t)2000)
+#define ERP_IR_WAKEUP_PULSE_WINDOW_MS   ((uint64_t)200)
 
-static bool hal_erp_ir_hold_qualified(void)
+static bool hal_erp_ir_wakeup_confirmed(void)
 {
     hal_sysclk_config();
     HAL_ResumeTick();
 
     uint64_t start = time_1ms;
-    while(hal_gpio_get(IR_IN_GPIO) == GPIO_LOW) {
-        if((time_1ms - start) >= ERP_IR_WAKEUP_HOLD_MS) {
+    while((time_1ms - start) < ERP_IR_WAKEUP_CONFIRM_DELAY_MS) {
+        if(app_soc_cmd_control_get_mcu_watchdog_status()) {
+            hal_mcu_watchdog_refresh();
+        }
+    }
+
+    start = time_1ms;
+    while((time_1ms - start) < ERP_IR_WAKEUP_PULSE_WINDOW_MS) {
+        if(hal_gpio_get(IR_IN_GPIO) == GPIO_LOW) {
             return true;
         }
     }
@@ -138,23 +151,21 @@ void hal_set_erp_power_off(void)
     erp_ir_wakeup_flag = false;
     HAL_SuspendTick();
     while(!erp_wakeup_flag) {
-        /* Legacy SleepModeProcess() only entered STOP with the IR line high;
-         * found low, it left ERP on the spot. */
-        if(hal_gpio_get(IR_IN_GPIO) == GPIO_LOW) {
-            wake_source = "IR (line low at STOP entry)";
-            break;
+        /* As in the v0.18 SleepModeProcess(): STOP is only entered with the IR
+         * line high, and a line found low counts as an IR wake candidate just
+         * like an edge seen during STOP. */
+        bool ir_candidate = true;
+        if(hal_gpio_get(IR_IN_GPIO) == GPIO_HIGH) {
+            erp_ir_wakeup_flag = false;
+            /* Any enabled interrupt exits WFI; the flags filter the wake
+             * sources down to the keypad lines and the IR line. */
+            HAL_PWR_EnterSTOPMode(PWR_LOWPOWERREGULATOR_ON, PWR_STOPENTRY_WFI);
+            ir_candidate = erp_ir_wakeup_flag;
         }
 
-        /* Any enabled interrupt exits WFI; the flags filter the wake sources
-         * down to the keypad lines and the IR line. */
-        HAL_PWR_EnterSTOPMode(PWR_LOWPOWERREGULATOR_ON, PWR_STOPENTRY_WFI);
-
-        if(erp_ir_wakeup_flag) {
-            erp_ir_wakeup_flag = false;
-            if(hal_erp_ir_hold_qualified()) {
-                wake_source = "IR (line held low 2s)";
-                break;
-            }
+        if(ir_candidate && hal_erp_ir_wakeup_confirmed()) {
+            wake_source = "IR (low again after 2s)";
+            break;
         }
     }
     HAL_ResumeTick();

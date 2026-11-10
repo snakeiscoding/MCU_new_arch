@@ -22,18 +22,14 @@
  * can call hal_control_tone() on a key press and both paths will beep.
  *
  * The pulse width and the pin pattern are the legacy's: nRST and S4 low, one
- * of S1/S2/S3 high for 20ms, then all low. The legacy used a blocking
- * HAL_Delay(20); here the timer handler releases it instead. */
+ * of S1/S2/S3 high for 25ms (v0.18; v0.15 used 20ms), then all low. The timer
+ * handler releases it, as v0.18's BuzzerCtrlProcess() does. */
 #define TOGGLE_TONE ((uint8_t)0x00)
 #define LOW_TONE    ((uint8_t)0x01)
 #define MID_TONE    ((uint8_t)0x02)
 #define HIGH_TONE   ((uint8_t)0x03)
 
 static bool tone_enabled = true;
-/* The tone the keypad replays. The legacy kept exactly this latch - SetTone()
- * stored tone_type and BuzzerTrigerPrecess() played it on a key press - and
- * defaulted it to LOW_TONE. */
-static uint8_t tone_type = LOW_TONE;
 
 void hal_control_tone(uint8_t status, bool play)
 {
@@ -71,7 +67,6 @@ uint16_t hal_set_tone_status(uint8_t status)
      * below is the only way to tell them apart, which matters because
      * tone_enabled resets to true on every MCU reset while the host's idea of
      * the mute state does not. */
-    tone_type = status;
     if(tone_enabled) {
         hal_control_tone(status, true);
     }
@@ -79,12 +74,14 @@ uint16_t hal_set_tone_status(uint8_t status)
 }
 
 /* Key press feedback. Honours the mute flag, which hal_control_tone() itself
- * does not - the legacy BuzzerTrigerPrecess() checked tone_enable before doing
- * anything, and the keypad is the path that check was written for. */
+ * does not - the legacy BuzzerTrigerProcess() checked tone_enable before doing
+ * anything, and the keypad is the path that check was written for. Since v0.18
+ * a key press always plays the low tone, whatever 0x0001 last selected, so
+ * the tone_type latch v0.15 kept for the keypad is gone. */
 void hal_play_key_tone(void)
 {
     if(tone_enabled) {
-        hal_control_tone(tone_type, true);
+        hal_control_tone(LOW_TONE, true);
     }
 }
 
@@ -383,7 +380,13 @@ uint16_t hal_get_fw_version(void)
     return (MCU_FIRMWARE_VERSION_MAJOR << 8) | MCU_FIRMWARE_VERSION_MINOR;
 }
 
+/* As the legacy v0.18 SocUartSendCmd(): mask interrupts of preemption
+ * priority 2 and lower for the blocking transmit. Here that is the EXTI lines
+ * (fan RPM, IR, keypad); USART1 RX (0), TIM7 (1) and SysTick (0) still run. */
 void hal_soc_cmd_send(uint8_t *data, uint16_t len)
 {
+    uint32_t old_basepri = __get_BASEPRI();
+    __set_BASEPRI_MAX(2U << (8U - __NVIC_PRIO_BITS));
     hal_uart_send(UART_ID_1, data, len);
+    __set_BASEPRI(old_basepri);
 }
