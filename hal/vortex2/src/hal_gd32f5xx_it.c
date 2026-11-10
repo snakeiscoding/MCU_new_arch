@@ -44,6 +44,7 @@ OF SUCH DAMAGE.
 #include "mid_comm_monitor_led.h"
 #include "mid_fan.h"
 #include "mid_lcb_cmd.h"
+#include "mid_log.h"
 #include "mid_scheduler.h"
 #include "mid_soc_cmd.h"
 
@@ -73,7 +74,7 @@ static void resume_mcu_clk(void);
 #define SINGLE_ECC_ERROR_HANDLE(s)   do{}while(1)
 
 // #define UART_LOOPBACK_DEBUG
-#define IRQ_DEBUG
+// #define IRQ_DEBUG
 
 /*!
     \brief      this function handles NMI exception

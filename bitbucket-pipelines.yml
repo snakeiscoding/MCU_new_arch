@@ -1,0 +1,51 @@
+definitions:
+  steps:
+    - step: &build-ulcgc
+        name: Build ulcgc
+        runs-on: &runner
+          - self.hosted
+          - linux.shell
+        script:
+          - ./CI_CD_scripts/build_target.sh ulcgc app
+        artifacts:
+          - ci_artifacts/**
+
+    - step: &build-chimera3
+        name: Build chimera3
+        runs-on: *runner
+        script:
+          - ./CI_CD_scripts/build_target.sh chimera3 app
+        artifacts:
+          - ci_artifacts/**
+
+pipelines:
+  # branches:
+  #   main_test_CI_runner:
+  default:      # This for push trigger pipeline
+    - parallel: &build-all-targets
+        fail-fast: false
+        steps:
+          - step: *build-ulcgc
+          - step: *build-chimera3
+
+  custom:
+    manual-build:
+      - parallel: *build-all-targets
+
+    daily-build:
+      # A failed target must not block deploying the targets that did build.
+      # The deploy step reports missing targets and fails the pipeline itself.
+      - parallel:
+          fail-fast: false
+          on-fail:
+            strategy: ignore
+          steps:
+            - step: *build-ulcgc
+            - step: *build-chimera3
+
+      - step:
+          name: deploy FW to FTP
+          runs-on: *runner
+          script:
+            # List every target built above; missing ones are reported as FAILED
+            - ./CI_CD_scripts/deploy_FTP.sh ulcgc chimera3
